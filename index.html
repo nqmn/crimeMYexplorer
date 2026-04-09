@@ -173,6 +173,8 @@
         // Store API Population Data
         let popLookup = { state: {}, district: {} };
         let incomeLookup = { state: {}, district: {} }; // Add Income Data Storage
+        let povertyLookup = { state: {}, district: {} }; // Add Poverty Data Storage
+        let inequalityLookup = { state: {}, district: {} }; // Add Inequality Data Storage
 
         let filters = {
             level: 'state', // Default to state for clearer macroscopic view first
@@ -218,6 +220,8 @@
             // Fire and forget background fetches
             fetchPopulationData();
             fetchIncomeData();
+            fetchPovertyData();
+            fetchInequalityData();
         }
 
         async function fetchPopulationData() {
@@ -302,6 +306,91 @@
                 }
             } catch (err) {
                 console.error("Could not fetch income data", err);
+            }
+        }
+
+        async function fetchPovertyData() {
+            try {
+                // Fetching both District and State APIs simultaneously
+                const [distRes, stateRes] = await Promise.all([
+                    fetch('https://api.data.gov.my/data-catalogue/?id=hh_poverty_district&limit=100000'),
+                    fetch('https://api.data.gov.my/data-catalogue/?id=hh_poverty_state&limit=100000')
+                ]);
+                
+                if (distRes.ok) {
+                    const json = await distRes.json();
+                    const data = json.data || json;
+                    data.forEach(row => {
+                        let yr = row.date ? String(row.date).substring(0, 4) : null;
+                        if (!yr) return;
+                        let dist = normalizeName(row.district);
+                        // Safely parse the poverty column (typically poverty_relative)
+                        let pov = row.poverty_relative !== undefined ? Number(row.poverty_relative) : Number(row.poverty_absolute || row.poverty);
+                        if (!isNaN(pov) && dist && dist !== 'all') {
+                            if (!povertyLookup.district[dist]) povertyLookup.district[dist] = {};
+                            povertyLookup.district[dist][yr] = pov;
+                        }
+                    });
+                }
+
+                if (stateRes.ok) {
+                    const json = await stateRes.json();
+                    const data = json.data || json;
+                    data.forEach(row => {
+                        let yr = row.date ? String(row.date).substring(0, 4) : null;
+                        if (!yr) return;
+                        let st = normalizeName(row.state);
+                        let pov = row.poverty_relative !== undefined ? Number(row.poverty_relative) : Number(row.poverty_absolute || row.poverty);
+                        if (!isNaN(pov) && st) {
+                            if (!povertyLookup.state[st]) povertyLookup.state[st] = {};
+                            povertyLookup.state[st][yr] = pov;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Could not fetch poverty data", err);
+            }
+        }
+
+        async function fetchInequalityData() {
+            try {
+                // Fetching both District and State APIs simultaneously
+                const [distRes, stateRes] = await Promise.all([
+                    fetch('https://api.data.gov.my/data-catalogue/?id=hh_inequality_district&limit=100000'),
+                    fetch('https://api.data.gov.my/data-catalogue/?id=hh_inequality_state&limit=100000')
+                ]);
+                
+                if (distRes.ok) {
+                    const json = await distRes.json();
+                    const data = json.data || json;
+                    data.forEach(row => {
+                        let yr = row.date ? String(row.date).substring(0, 4) : null;
+                        if (!yr) return;
+                        let dist = normalizeName(row.district);
+                        let gini = Number(row.gini);
+                        if (!isNaN(gini) && dist && dist !== 'all') {
+                            if (!inequalityLookup.district[dist]) inequalityLookup.district[dist] = {};
+                            inequalityLookup.district[dist][yr] = gini;
+                        }
+                    });
+                }
+
+                if (stateRes.ok) {
+                    const json = await stateRes.json();
+                    const data = json.data || json;
+                    data.forEach(row => {
+                        let yr = row.date ? String(row.date).substring(0, 4) : null;
+                        if (!yr) return;
+                        let st = normalizeName(row.state);
+                        let gini = Number(row.gini);
+                        if (!isNaN(gini) && st) {
+                            if (!inequalityLookup.state[st]) inequalityLookup.state[st] = {};
+                            inequalityLookup.state[st][yr] = gini;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Could not fetch inequality data", err);
             }
         }
 
@@ -742,6 +831,64 @@
                         }
                     }
                     
+                    // --- Poverty Logic ---
+                    let povertyHtml = '';
+                    const povertyLevelData = povertyLookup[filters.level];
+                    if (povertyLevelData && povertyLevelData[normName]) {
+                        // Poverty data is surveyed every few years (e.g., 2016, 2019, 2022)
+                        let yearTarget = filters.year === 'All' ? '2022' : filters.year; 
+                        let povVal = povertyLevelData[normName][yearTarget];
+                        
+                        if (povVal === undefined) {
+                            const availableYrs = Object.keys(povertyLevelData[normName]).sort().reverse();
+                            if(availableYrs.length > 0) {
+                                // Find closest survey year prior to or equal to map selection
+                                let targetYrNum = filters.year === 'All' ? 9999 : parseInt(filters.year);
+                                let closestYr = availableYrs.find(y => parseInt(y) <= targetYrNum) || availableYrs[0];
+                                yearTarget = closestYr;
+                                povVal = povertyLevelData[normName][yearTarget];
+                            }
+                        }
+                        
+                        if (povVal !== undefined) {
+                            povertyHtml = `
+                                <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5">
+                                    <span>Rel. Poverty (${yearTarget}):</span>
+                                    <span class="font-bold text-orange-600 ml-3">${povVal.toFixed(1)}%</span>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    // --- Inequality Logic ---
+                    let inequalityHtml = '';
+                    const inequalityLevelData = inequalityLookup[filters.level];
+                    if (inequalityLevelData && inequalityLevelData[normName]) {
+                        // Inequality data is surveyed every few years
+                        let yearTarget = filters.year === 'All' ? '2022' : filters.year; 
+                        let giniVal = inequalityLevelData[normName][yearTarget];
+                        
+                        if (giniVal === undefined) {
+                            const availableYrs = Object.keys(inequalityLevelData[normName]).sort().reverse();
+                            if(availableYrs.length > 0) {
+                                // Find closest survey year prior to or equal to map selection
+                                let targetYrNum = filters.year === 'All' ? 9999 : parseInt(filters.year);
+                                let closestYr = availableYrs.find(y => parseInt(y) <= targetYrNum) || availableYrs[0];
+                                yearTarget = closestYr;
+                                giniVal = inequalityLevelData[normName][yearTarget];
+                            }
+                        }
+                        
+                        if (giniVal !== undefined) {
+                            inequalityHtml = `
+                                <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5">
+                                    <span>Gini Coefficient (${yearTarget}):</span>
+                                    <span class="font-bold text-purple-600 ml-3">${giniVal.toFixed(3)}</span>
+                                </div>
+                            `;
+                        }
+                    }
+
                     // --- Types Breakdown ---
                     let typesHtml = '';
                     if (crimeCount > 0 && locData.types) {
@@ -772,6 +919,8 @@
                             </div>
                             ${popHtml}
                             ${incomeHtml}
+                            ${povertyHtml}
+                            ${inequalityHtml}
                             ${typesHtml}
                         </div>
                     `;

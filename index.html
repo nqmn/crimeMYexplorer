@@ -112,7 +112,15 @@
             </div>
         </div>
 
-        <!-- Did You Know Banner (Inside Control Panel) -->
+        <!-- Yearly Trend Chart Container -->
+        <div id="chartContainer" class="mt-6 hidden">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">3. Yearly Trend</label>
+            <div class="p-3 bg-gray-50 border border-gray-200 rounded-xl shadow-inner relative h-40 w-full">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Did You Know Banner -->
         <div id="factBanner" class="mt-6 p-4 bg-yellow-50 rounded-xl border border-yellow-200 hidden cursor-pointer hover:bg-yellow-100 transition-colors group relative overflow-hidden">
             <div class="absolute -right-4 -top-4 text-yellow-200 opacity-50 group-hover:rotate-12 transition-transform">
                 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9v1Z"/></svg>
@@ -150,6 +158,7 @@
     <!-- External Libraries -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Added Chart.js -->
 
     <script>
         // --- State Management ---
@@ -159,6 +168,7 @@
         let map = null;
         let geojsonLayer = null;
         let availableYears = ['All'];
+        let trendChart = null; // Chart instance
 
         let filters = {
             level: 'state', // Default to state for clearer macroscopic view first
@@ -207,7 +217,6 @@
             const toast = document.getElementById('toast');
             document.getElementById('toastMsg').textContent = msg;
             toast.classList.remove('hidden');
-            // Small timeout to allow display:block to apply before animating opacity
             setTimeout(() => { toast.classList.remove('opacity-0'); }, 10);
             
             setTimeout(() => {
@@ -247,7 +256,6 @@
                 
                 const jsonRes = await response.json();
                 
-                // Extract array from the JSON response depending on the API's return structure
                 if (jsonRes && jsonRes.data && Array.isArray(jsonRes.data)) {
                     rawData = jsonRes.data;
                 } else if (Array.isArray(jsonRes)) {
@@ -303,7 +311,6 @@
             const types = new Set();
 
             rawData.forEach(row => {
-                // Extract Year from Date (format "YYYY-MM-DD")
                 if (row.date) {
                     const dateStr = String(row.date);
                     if(dateStr.length >= 4) {
@@ -323,7 +330,6 @@
                     if(item !== 'all' && item !== 'All') {
                         const opt = document.createElement('option');
                         opt.value = item;
-                        // Format string (e.g., 'theft_vehicle_lorry' -> 'Theft Vehicle Lorry')
                         opt.textContent = item.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
                         selectElem.appendChild(opt);
                     }
@@ -352,6 +358,9 @@
 
             fillSelect('categoryFilter', categories);
             fillSelect('typeFilter', types);
+            
+            // Show Chart Container once data is available
+            document.getElementById('chartContainer').classList.remove('hidden');
         }
 
         // --- Interactive Fact Banner Logic ---
@@ -363,7 +372,6 @@
         function displayRandomFact() {
             if (!rawData || rawData.length === 0) return;
             
-            // Filter down to valid, specific granular rows (no broad 'All' rows or empty counts)
             const validData = rawData.filter(r => 
                 r.district && r.district.toLowerCase() !== 'all' && 
                 r.type && r.type.toLowerCase() !== 'all' && 
@@ -372,7 +380,6 @@
             
             if (validData.length === 0) return;
 
-            // Pick a random row
             const row = validData[Math.floor(Math.random() * validData.length)];
             const year = row.year || String(row.date).substring(0, 4);
             const district = row.district;
@@ -386,7 +393,6 @@
                 `On average, <strong>${(crimes/12).toFixed(1)}</strong> ${type} cases happened every month in <strong>${district}</strong> during ${year}.`
             ];
 
-            // If occurrences are high enough, compute daily or weekly insights
             if (crimes >= 365) {
                 templates.push(`Every day, an average of <strong class="font-extrabold text-yellow-950">${Math.floor(crimes/365)}</strong> ${type} cases happened in <strong>${district}</strong> in ${year}.`);
             } else if (crimes >= 52) {
@@ -403,20 +409,19 @@
 
         document.getElementById('factBanner').addEventListener('click', displayRandomFact);
 
-        // Normalize geographical names to allow cross-matching between CSV and GeoJSON
+        // Normalize geographical names
         function normalizeName(name) {
             if (!name) return "";
             return name.toLowerCase()
                 .replace(/w\.p\.\s*/g, '')
                 .replace(/federal territory of /g, '')
-                .replace(/darul\s+[a-z']+/g, '') // Strip honorifics e.g., Darul Ta'zim
+                .replace(/darul\s+[a-z']+/g, '')
                 .replace(/pulau pinang/g, 'penang')
-                .replace(/[^a-z0-9]/g, ''); // Strip all special chars & spaces
+                .replace(/[^a-z0-9]/g, '');
         }
 
         function getFeatureName(feature) {
             const props = feature.properties;
-            // Iterate over common Name properties in standard GeoJSON setups
             for (const key of ['name', 'Name', 'NAME', 'NAME_1', 'NAME_2', 'shapeName', 'nam_daerah']) {
                 if (props[key]) return props[key];
             }
@@ -428,23 +433,15 @@
             let counts = {};
 
             rawData.forEach(row => {
-                // Ignore empty or structural national-level summaries
                 if (!row.state || row.state === 'Malaysia') return;
-                
-                // Avoid double counting generic/broad rows when compiling
                 if (row.district === 'All' || row.district === 'all') return; 
 
-                // Process active filters
                 if (filters.year !== 'All' && row.year !== filters.year) return;
                 if (filters.category !== 'All' && row.category !== filters.category) return;
 
-                // To build an accurate breakdown, we must use granular types and ignore the summary 'all' rows
                 if (row.type === 'all' || row.type === 'All') return;
-
-                // If a specific type is selected, filter out others
                 if (filters.type !== 'All' && row.type !== filters.type) return;
 
-                // Map target logic
                 let nameKey = filters.level === 'state' ? normalizeName(row.state) : normalizeName(row.district);
 
                 if (!counts[nameKey]) counts[nameKey] = { total: 0, types: {} };
@@ -452,12 +449,100 @@
                 let val = Number(row.crimes) || 0;
                 counts[nameKey].total += val;
                 
-                // Track breakdown by crime type
                 if (!counts[nameKey].types[row.type]) counts[nameKey].types[row.type] = 0;
                 counts[nameKey].types[row.type] += val;
             });
 
             return counts;
+        }
+
+        // --- Chart Rendering Logic ---
+        function renderChart() {
+            if (!rawData || rawData.length === 0) return;
+
+            const yearCounts = {};
+            const activeYears = availableYears.filter(y => y !== 'All').sort();
+            activeYears.forEach(y => yearCounts[y] = 0);
+
+            // Aggregate data by year matching current Category and Type filters
+            rawData.forEach(row => {
+                if (!row.state || row.state === 'Malaysia') return;
+                if (row.district === 'All' || row.district === 'all') return; 
+                if (filters.category !== 'All' && row.category !== filters.category) return;
+                if (row.type === 'all' || row.type === 'All') return;
+                if (filters.type !== 'All' && row.type !== filters.type) return;
+
+                const yr = row.year || (row.date ? String(row.date).substring(0, 4) : null);
+                if (yr && yearCounts[yr] !== undefined) {
+                    yearCounts[yr] += (Number(row.crimes) || 0);
+                }
+            });
+
+            const dataPoints = activeYears.map(y => yearCounts[y]);
+
+            // Set dynamic styles based on the year slider selection for a Line Chart
+            const lineColor = 'rgba(220, 38, 38, 0.8)'; // Red 600
+            const fillColor = 'rgba(220, 38, 38, 0.1)'; // Light red fill
+            const defaultPointColor = 'rgba(239, 68, 68, 1)'; 
+            const highlightPointColor = 'rgba(153, 27, 27, 1)'; // Darker Red for active year
+
+            const pointBgColors = activeYears.map(y => y === filters.year ? highlightPointColor : defaultPointColor);
+            const pointRadii = activeYears.map(y => y === filters.year ? 6 : 3);
+
+            if (trendChart) {
+                trendChart.data.labels = activeYears;
+                trendChart.data.datasets[0].data = dataPoints;
+                trendChart.data.datasets[0].pointBackgroundColor = pointBgColors;
+                trendChart.data.datasets[0].pointBorderColor = pointBgColors;
+                trendChart.data.datasets[0].pointRadius = pointRadii;
+                trendChart.update();
+            } else {
+                const ctx = document.getElementById('trendChart').getContext('2d');
+                trendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: activeYears,
+                        datasets: [{
+                            label: 'Reported Crimes',
+                            data: dataPoints,
+                            borderColor: lineColor,
+                            backgroundColor: fillColor,
+                            borderWidth: 2,
+                            pointBackgroundColor: pointBgColors,
+                            pointBorderColor: pointBgColors,
+                            pointRadius: pointRadii,
+                            pointHoverRadius: 6,
+                            fill: true,
+                            tension: 0.3 // Adds a slight smooth curve to the line
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.raw.toLocaleString() + ' cases';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { font: { size: 10 }, maxTicksLimit: 5 },
+                                grid: { color: '#e2e8f0' }
+                            },
+                            x: {
+                                ticks: { font: { size: 10 } },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
         }
 
         // --- Rendering Map Elements ---
@@ -475,7 +560,7 @@
             if (geojsonLayer) map.removeLayer(geojsonLayer);
             
             const geojsonData = filters.level === 'state' ? stateGeojson : districtGeojson;
-            if (!geojsonData) return; // Wait until GeoJSON loads
+            if (!geojsonData) return;
 
             const counts = getAggregatedData();
             const crimeValues = Object.values(counts).map(c => c.total);
@@ -490,7 +575,7 @@
                         fillColor: getColor(crimeCount, maxCrimes),
                         weight: filters.level === 'state' ? 1.5 : 1,
                         opacity: 1,
-                        color: '#cbd5e1', // Slate 300 border
+                        color: '#cbd5e1', 
                         fillOpacity: crimeCount > 0 ? 0.85 : 0.4
                     };
                 },
@@ -499,7 +584,6 @@
                     const locData = counts[normalizeName(name)] || { total: 0, types: {} };
                     const crimeCount = locData.total;
                     
-                    // Build the breakdown HTML for the tooltip
                     let typesHtml = '';
                     if (crimeCount > 0 && locData.types) {
                         const sortedTypes = Object.entries(locData.types).sort((a, b) => b[1] - a[1]);
@@ -537,13 +621,12 @@
                         className: 'bg-white/95 backdrop-blur shadow-2xl rounded-lg border border-gray-100 p-2'
                     });
                     
-                    // Interaction highlights
                     layer.on({
                         mouseover: function(e) {
                             const l = e.target;
                             l.setStyle({
                                 weight: 3,
-                                color: '#1e293b', // Highlight edge in Slate 800
+                                color: '#1e293b', 
                                 fillOpacity: 1
                             });
                             l.bringToFront();
@@ -556,6 +639,7 @@
             }).addTo(map);
 
             updateLegend(maxCrimes);
+            renderChart(); // Make sure the chart updates perfectly in sync with the map!
         }
 
         function updateLegend(maxCrimes) {
@@ -580,8 +664,6 @@
             for (let i = 0; i < grades.length; i++) {
                 const start = grades[i];
                 const end = grades[i + 1];
-                
-                // For grade 0, use start+1 color to avoid white (empty) color, representing the 1st tier.
                 const colorValue = getColor(start + 1, maxCrimes);
                 
                 html += `

@@ -2,64 +2,93 @@
 
 Live site: <https://nqmn.github.io/crimeMYexplorer/>
 
-`crimeMYexplorer` is a single-page map in `index.html` that visualizes Malaysian crime data by state or district and enriches it with population, density, income, poverty, unemployment, and inequality context.
+`crimeMYexplorer` is a single-page Malaysia crime explorer in `index.html`. It combines live district-level crime data with administrative boundaries and socioeconomic indicators so users can switch between a crime heatmap and a socioeconomic risk map.
 
-The page uses Leaflet for the map, Chart.js for the yearly trend chart, Papa Parse for CSV export, and Turf.js to calculate area-based density values.
+The page uses Leaflet for mapping, Chart.js for the yearly trend chart, Papa Parse for CSV export, and Turf.js for area and density calculations.
 
 ## What `index.html` does
 
-The app starts with Malaysia administrative boundaries and a basemap, then fetches supporting reference data in the background:
+On load, the app:
 
-- Crime data from `crime_district`
-- Population from `population_district`
-- Median household income from `hh_income_district` and `hh_income_state`
-- Poverty from `hh_poverty_district` and `hh_poverty_state`
-- Inequality from `hh_inequality_district` and `hh_inequality_state`
-- Unemployment from `lfs_district` and `lfs_state`
+- Initializes a Leaflet map centered on Malaysia
+- Loads Malaysia state and district GeoJSON boundaries from GitHub
+- Pre-calculates polygon area for density metrics
+- Fetches supporting reference series in the background from `data.gov.my`
 
-When the user clicks **Fetch OpenDOSM Data**, the app first tries to load the official OpenDOSM crime dataset from the DOSM data file endpoint and then falls back to the `data.gov.my` API if needed. After loading, it populates the filters, recolors the map, shows a yearly trend line, and enables CSV download for a consolidated dataset.
+Background reference datasets:
+
+- `population_district`
+- `hh_income_district`
+- `hh_income_state`
+- `hh_poverty_district`
+- `hh_poverty_state`
+- `hh_inequality_district`
+- `hh_inequality_state`
+- `lfs_district`
+- `lfs_state`
+
+When the user clicks **Fetch Live API Data**, the app loads the `crime_district` dataset from `https://api.data.gov.my/data-catalogue/?id=crime_district`, enables the controls, updates the map, shows the yearly trend chart, and reveals a rotating fact banner based on a random crime record.
 
 ## How to use the page
 
 1. Open the live site.
-2. Click **Fetch OpenDOSM Data**.
-3. Choose the **View Level**.
-4. Adjust the **Year** slider.
-5. Narrow the results with **Crime Category** and **Crime Type**.
-6. Hover on a state or district to inspect the tooltip.
-7. Use the save button to download the consolidated CSV.
+2. Click **Fetch Live API Data**.
+3. Choose a **Map Layer**:
+   `Crime Map` or `Risk Map`.
+4. Choose a **View Level**:
+   `States` or `Districts`.
+5. Adjust the **Year** slider.
+6. Filter by **Crime Category** and **Crime Type**.
+7. Hover an area to inspect the tooltip.
+8. Click the save icon to export the consolidated CSV.
+9. Click the **Did you know?** banner to refresh the fact.
 
-`States` aggregates crimes by state, while `Districts` aggregates crimes by district. `All Years` sums crime counts across all available years, while a specific year filters crime counts to that year only.
+`All Years` sums crimes across all available years. A specific year filters crime counts to that year only.
 
-## What the map shows
+## Map layers
 
-The choropleth color is based on the total filtered crime count for each area.
+### Crime Map
 
-- Darker red means a higher crime count relative to the current filtered view.
-- Pale areas mean fewer or zero crimes in the current filtered view.
+The default choropleth colors areas by filtered total crime count.
 
-The tooltip can show:
+- Darker red means more filtered crimes
+- Pale areas mean fewer or zero filtered crimes
+
+The legend is scaled relative to the current filtered maximum.
+
+### Risk Map
+
+The alternate choropleth colors areas by a `0` to `10` socioeconomic risk score.
+
+- `8` to `10`: Very High
+- `6` to `< 8`: High
+- `4` to `< 6`: Medium
+- `2` to `< 4`: Low-Medium
+- `0` to `< 2`: Low
+- No fill emphasis: no supporting data available
+
+This score is a contextual socioeconomic summary. It is not a crime prediction and not a measure of personal safety.
+
+## Tooltip contents
+
+Depending on the selected area and available data, the tooltip can show:
 
 - Total crimes
 - Population
-- Population density
+- Population density per square kilometer
 - Crime rate per 100,000 residents
 - Median income
 - Relative poverty
 - Unemployment
-- Income Inequality (Gini coefficient)
+- Income inequality (Gini coefficient)
 - Socioeconomic risk score
 - Crime-type breakdown
 
+For supporting metrics, the app first tries the selected year. If that year is unavailable, it falls back to the closest available earlier year, or the latest available record.
+
 ## Score calculation
 
-The socioeconomic score shown in the tooltip and CSV is a weighted score from `0` to `10`.
-
-Higher scores mean a location has weaker socioeconomic conditions according to the app's selected indicators. It is not a prediction of crime and it is not a measure of individual safety.
-
-### Formula
-
-The score is calculated as:
+The socioeconomic score is calculated on a `0` to `10` scale:
 
 ```text
 Score =
@@ -69,7 +98,7 @@ Score =
   (GiniRisk * 0.15)
 ```
 
-Each component is first normalized to a `0` to `10` risk scale:
+Each component is normalized first:
 
 ```text
 IncomeRisk =
@@ -85,61 +114,67 @@ GiniRisk =
   ((clamp(gini, 0.25, 0.45) - 0.25) / 0.20) * 10
 ```
 
-### Weighting
+Weights:
 
 - Income: `30%`
 - Relative poverty: `30%`
 - Unemployment: `25%`
-- Income Inequality (Gini coefficient): `15%`
+- Gini coefficient: `15%`
 
-### Missing-data behavior
+Missing-data behavior:
 
-- A score is only computed when both income and poverty data are available.
-- If unemployment is missing, the app uses a fallback of `3.5`.
-- If Income Inequality (Gini coefficient) is missing, the app uses a fallback of `0.35`.
-- For socioeconomic series, the tooltip tries to use the selected year. If that year is unavailable, it falls back to the closest available earlier year, or the latest available record.
+- A score is only computed when both income and poverty are available
+- If unemployment is missing, the app uses `3.5`
+- If Gini is missing, the app uses `0.35`
+- In the UI, `All Years` uses 2022 as the default target year for income, poverty, and inequality, and 2023 for unemployment before fallback logic is applied
 
-## How to interpret the score
+## Yearly trend chart
 
-The UI colors the score like this:
+After crime data loads, the app displays a line chart of filtered reported crimes by year.
 
-- `0.0` to `< 4.0`: lower socioeconomic risk
-- `4.0` to `< 7.0`: moderate socioeconomic risk
-- `7.0` to `10.0`: higher socioeconomic risk
-
-Interpretation guidance:
-
-- A higher score means lower income and/or higher poverty, unemployment, and inequality relative to the app's built-in normalization ranges.
-- The score is best used for comparing areas within this app, not as an absolute national ranking.
-- The score should be read together with the actual crime count and crime rate per 100,000, because a high crime count can simply reflect a larger population.
-- `All Years` affects crime totals, but the socioeconomic indicators may come from the nearest available supporting year rather than a full multi-year average.
+- The chart excludes national rollup rows and `All` district/type aggregates
+- Changing category or type updates the series
+- The currently selected year is highlighted on the chart
 
 ## CSV export
 
-The download button exports a consolidated CSV with:
+The save button exports `malaysia_crime_socioeconomic_data.csv` built from the loaded crime rows and the closest matching supporting indicators.
 
-- State and district
-- Category and type
-- Year
-- Crimes
-- Population
-- Area in square kilometers
-- Population density
-- Crime rate per 100,000
-- Median income
-- Relative poverty
-- Unemployment
-- Income Inequality (Gini coefficient)
-- Socioeconomic risk score
+Export columns:
 
-## Data source
+- `State`
+- `District`
+- `Category`
+- `Type`
+- `Year`
+- `Crimes`
+- `Population`
+- `Area_SqKm`
+- `Density_Per_SqKm`
+- `Crime_Rate_Per_100k`
+- `Median_Income_RM`
+- `Relative_Poverty_Pct`
+- `Unemployment_Pct`
+- `Gini_Coefficient`
+- `Socioeconomic_Risk_Score`
 
+## Data sources
+
+- Crime and socioeconomic datasets: <https://api.data.gov.my/data-catalogue/>
 - OpenDOSM dataset page: <https://open.dosm.gov.my/data-catalogue/>
-
+- State boundaries: <https://github.com/nullifye/malaysia.geojson>
+- District boundaries: <https://github.com/nullifye/malaysia.geojson>
+- Basemap tiles: CARTO Voyager / OpenStreetMap contributors
 
 ## Notes and limitations
 
-- The map depends on external API and GeoJSON endpoints, so loading requires network access.
-- District matching relies on normalized names, so some granular records may be grouped to standard map boundaries.
-- The choropleth is based on filtered crime totals, not directly on the socioeconomic score.
-- The score is a heuristic summary built from public indicators, not a causal model.
+- The app requires network access because it loads live API and GeoJSON resources at runtime.
+- District and state matching relies on normalized names, so some records may be grouped to the nearest supported boundary name.
+- Live API responses may be incomplete or may not fully load in some sessions because of upstream API limitations.
+- The crime layer is based on filtered crime totals, not rates.
+- The risk layer is a heuristic built from public socioeconomic indicators, not a causal or predictive model.
+- Population values are normalized in code when the source appears to be reported in thousands.
+
+## Support
+
+If you are interested in collaborating to improve this heatmap for public-benefit use cases, please get in touch.

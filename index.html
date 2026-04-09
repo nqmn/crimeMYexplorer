@@ -172,6 +172,7 @@
         
         // Store API Population Data
         let popLookup = { state: {}, district: {} };
+        let incomeLookup = { state: {}, district: {} }; // Add Income Data Storage
 
         let filters = {
             level: 'state', // Default to state for clearer macroscopic view first
@@ -214,8 +215,9 @@
                 showToast("Failed to load map boundaries. Please check your connection.");
             }
             
-            // Fire and forget population fetch in the background
+            // Fire and forget background fetches
             fetchPopulationData();
+            fetchIncomeData();
         }
 
         async function fetchPopulationData() {
@@ -258,6 +260,48 @@
                 });
             } catch (err) {
                 console.error("Could not fetch population data", err);
+            }
+        }
+
+        async function fetchIncomeData() {
+            try {
+                // Fetching both District and State APIs simultaneously for robustness
+                const [distRes, stateRes] = await Promise.all([
+                    fetch('https://api.data.gov.my/data-catalogue/?id=hh_income_district&limit=100000'),
+                    fetch('https://api.data.gov.my/data-catalogue/?id=hh_income_state&limit=100000')
+                ]);
+                
+                if (distRes.ok) {
+                    const json = await distRes.json();
+                    const data = json.data || json;
+                    data.forEach(row => {
+                        let yr = row.date ? String(row.date).substring(0, 4) : null;
+                        if (!yr) return;
+                        let dist = normalizeName(row.district);
+                        let income = Number(row.income_median) || 0;
+                        if (income > 0 && dist && dist !== 'all') {
+                            if (!incomeLookup.district[dist]) incomeLookup.district[dist] = {};
+                            incomeLookup.district[dist][yr] = income;
+                        }
+                    });
+                }
+
+                if (stateRes.ok) {
+                    const json = await stateRes.json();
+                    const data = json.data || json;
+                    data.forEach(row => {
+                        let yr = row.date ? String(row.date).substring(0, 4) : null;
+                        if (!yr) return;
+                        let st = normalizeName(row.state);
+                        let income = Number(row.income_median) || 0;
+                        if (income > 0 && st) {
+                            if (!incomeLookup.state[st]) incomeLookup.state[st] = {};
+                            incomeLookup.state[st][yr] = income;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Could not fetch income data", err);
             }
         }
 
@@ -659,11 +703,40 @@
                                     <span>Pop. (${yearTarget}):</span>
                                     <span class="font-bold text-blue-700 ml-3">${Math.round(popCount).toLocaleString()}</span>
                                 </div>
-                                <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5 pb-1.5 border-b border-gray-100">
+                                <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5">
                                     <span>Rate / 100k:</span>
                                     <span class="font-bold ${rate > 0 ? 'text-red-600' : 'text-gray-400'} ml-3">
                                         ${rate}
                                     </span>
+                                </div>
+                            `;
+                        }
+                    }
+                    
+                    // --- Income Logic ---
+                    let incomeHtml = '';
+                    const incomeLevelData = incomeLookup[filters.level];
+                    if (incomeLevelData && incomeLevelData[normName]) {
+                        // Household income data is surveyed every few years (e.g., 2016, 2019, 2022)
+                        let yearTarget = filters.year === 'All' ? '2022' : filters.year; 
+                        let incVal = incomeLevelData[normName][yearTarget];
+                        
+                        if (!incVal) {
+                            const availableYrs = Object.keys(incomeLevelData[normName]).sort().reverse();
+                            if(availableYrs.length > 0) {
+                                // Find closest survey year prior to or equal to map selection
+                                let targetYrNum = filters.year === 'All' ? 9999 : parseInt(filters.year);
+                                let closestYr = availableYrs.find(y => parseInt(y) <= targetYrNum) || availableYrs[0];
+                                yearTarget = closestYr;
+                                incVal = incomeLevelData[normName][yearTarget];
+                            }
+                        }
+                        
+                        if (incVal) {
+                            incomeHtml = `
+                                <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5">
+                                    <span>Med. Income (${yearTarget}):</span>
+                                    <span class="font-bold text-green-700 ml-3">RM ${incVal.toLocaleString()}</span>
                                 </div>
                             `;
                         }
@@ -698,6 +771,7 @@
                                 </span>
                             </div>
                             ${popHtml}
+                            ${incomeHtml}
                             ${typesHtml}
                         </div>
                     `;

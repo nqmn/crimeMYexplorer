@@ -165,7 +165,8 @@
     <!-- External Libraries -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Added Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script> <!-- Turf.js for GeoSpatial Math -->
 
     <script>
         // --- State Management ---
@@ -182,6 +183,8 @@
         let incomeLookup = { state: {}, district: {} }; // Add Income Data Storage
         let povertyLookup = { state: {}, district: {} }; // Add Poverty Data Storage
         let inequalityLookup = { state: {}, district: {} }; // Add Inequality Data Storage
+        let unemploymentLookup = { state: {}, district: {} }; // Add Unemployment Data Storage
+        let geoAreaCache = { state: {}, district: {} }; // Store Turf.js Area Calculations
 
         let filters = {
             level: 'state', // Default to state for clearer macroscopic view first
@@ -218,6 +221,10 @@
                 if (distRes.ok) districtGeojson = await distRes.json();
                 else showToast("Warning: Could not fetch District boundaries.");
                 
+                // Pre-calculate areas via Turf.js
+                if (stateGeojson) calculateGeoAreas(stateGeojson, 'state');
+                if (districtGeojson) calculateGeoAreas(districtGeojson, 'district');
+                
                 updateMap(); // Draw empty states map
             } catch (err) {
                 console.error(err);
@@ -229,40 +236,45 @@
             fetchIncomeData();
             fetchPovertyData();
             fetchInequalityData();
+            fetchUnemploymentData();
+        }
+
+        // Cache square kilometers area for Density calculations
+        function calculateGeoAreas(geoJsonData, level) {
+            turf.featureEach(geoJsonData, function (currentFeature) {
+                const name = normalizeName(getFeatureName(currentFeature));
+                if (name) {
+                    const areaSqMeters = turf.area(currentFeature);
+                    geoAreaCache[level][name] = areaSqMeters / 1000000; // Convert to Sq KM
+                }
+            });
         }
 
         async function fetchPopulationData() {
             try {
-                // Fetch population API. Added limit to ensure we capture large granular datasets
                 const res = await fetch('https://api.data.gov.my/data-catalogue/?id=population_district&limit=100000');
                 if (!res.ok) return;
-                
                 const json = await res.json();
                 const data = json.data || json;
                 
-                // DOSM population data is sometimes presented in '000s. 
-                // We calculate the max to detect if we need to scale it up.
                 let isThousands = false;
                 const maxPop = Math.max(...data.map(d => Number(d.population) || 0));
                 if (maxPop < 100000) isThousands = true;
 
                 data.forEach(row => {
                     let yr = row.date ? String(row.date).substring(0, 4) : null;
-                    if (!yr || yr < '2016') return; // Filter to start from 2016
+                    if (!yr || yr < '2016') return; 
                     
                     let st = normalizeName(row.state);
                     let dist = normalizeName(row.district);
                     let pop = Number(row.population) || 0;
                     if (isThousands) pop *= 1000;
                     
-                    // Aggregate State Totals
                     if (st) {
                         if (!popLookup.state[st]) popLookup.state[st] = {};
                         if (!popLookup.state[st][yr]) popLookup.state[st][yr] = 0;
                         popLookup.state[st][yr] += pop;
                     }
-                    
-                    // Aggregate District Totals
                     if (dist && dist !== 'all') {
                         if (!popLookup.district[dist]) popLookup.district[dist] = {};
                         if (!popLookup.district[dist][yr]) popLookup.district[dist][yr] = 0;
@@ -276,7 +288,6 @@
 
         async function fetchIncomeData() {
             try {
-                // Fetching both District and State APIs simultaneously for robustness
                 const [distRes, stateRes] = await Promise.all([
                     fetch('https://api.data.gov.my/data-catalogue/?id=hh_income_district&limit=100000'),
                     fetch('https://api.data.gov.my/data-catalogue/?id=hh_income_state&limit=100000')
@@ -318,7 +329,6 @@
 
         async function fetchPovertyData() {
             try {
-                // Fetching both District and State APIs simultaneously
                 const [distRes, stateRes] = await Promise.all([
                     fetch('https://api.data.gov.my/data-catalogue/?id=hh_poverty_district&limit=100000'),
                     fetch('https://api.data.gov.my/data-catalogue/?id=hh_poverty_state&limit=100000')
@@ -331,7 +341,6 @@
                         let yr = row.date ? String(row.date).substring(0, 4) : null;
                         if (!yr) return;
                         let dist = normalizeName(row.district);
-                        // Safely parse the poverty column (typically poverty_relative)
                         let pov = row.poverty_relative !== undefined ? Number(row.poverty_relative) : Number(row.poverty_absolute || row.poverty);
                         if (!isNaN(pov) && dist && dist !== 'all') {
                             if (!povertyLookup.district[dist]) povertyLookup.district[dist] = {};
@@ -361,7 +370,6 @@
 
         async function fetchInequalityData() {
             try {
-                // Fetching both District and State APIs simultaneously
                 const [distRes, stateRes] = await Promise.all([
                     fetch('https://api.data.gov.my/data-catalogue/?id=hh_inequality_district&limit=100000'),
                     fetch('https://api.data.gov.my/data-catalogue/?id=hh_inequality_state&limit=100000')
@@ -398,6 +406,47 @@
                 }
             } catch (err) {
                 console.error("Could not fetch inequality data", err);
+            }
+        }
+
+        async function fetchUnemploymentData() {
+            try {
+                const [distRes, stateRes] = await Promise.all([
+                    fetch('https://api.data.gov.my/data-catalogue/?id=lfs_district&limit=100000'),
+                    fetch('https://api.data.gov.my/data-catalogue/?id=lfs_state&limit=100000')
+                ]);
+                
+                if (distRes.ok) {
+                    const json = await distRes.json();
+                    const data = json.data || json;
+                    data.forEach(row => {
+                        let yr = row.date ? String(row.date).substring(0, 4) : null;
+                        if (!yr) return;
+                        let dist = normalizeName(row.district);
+                        let uRate = row.u_rate !== undefined ? Number(row.u_rate) : Number(row.unemployment_rate);
+                        if (!isNaN(uRate) && dist && dist !== 'all') {
+                            if (!unemploymentLookup.district[dist]) unemploymentLookup.district[dist] = {};
+                            unemploymentLookup.district[dist][yr] = uRate;
+                        }
+                    });
+                }
+
+                if (stateRes.ok) {
+                    const json = await stateRes.json();
+                    const data = json.data || json;
+                    data.forEach(row => {
+                        let yr = row.date ? String(row.date).substring(0, 4) : null;
+                        if (!yr) return;
+                        let st = normalizeName(row.state);
+                        let uRate = row.u_rate !== undefined ? Number(row.u_rate) : Number(row.unemployment_rate);
+                        if (!isNaN(uRate) && st) {
+                            if (!unemploymentLookup.state[st]) unemploymentLookup.state[st] = {};
+                            unemploymentLookup.state[st][yr] = uRate;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Could not fetch unemployment data", err);
             }
         }
 
@@ -526,7 +575,6 @@
                 selectElem.removeAttribute('disabled');
             };
 
-            // Setup Year Slider
             const sortedYears = [...years].sort();
             availableYears = ['All', ...sortedYears];
             
@@ -548,7 +596,6 @@
             fillSelect('categoryFilter', categories);
             fillSelect('typeFilter', types);
             
-            // Show Chart Container once data is available
             document.getElementById('chartContainer').classList.remove('hidden');
         }
 
@@ -623,19 +670,46 @@
                 const normSt = normalizeName(row.state);
                 const normDist = normalizeName(row.district);
                 
-                let pop = '', inc = '', pov = '', gini = '';
+                let pop = '', inc = '', pov = '', gini = '', uRate = '', areaKm2 = '', popDensity = '';
 
-                // Extract related data for the specific row's year/location
                 if (normDist && normDist !== 'all') {
                     pop = getClosestData(popLookup.district, normDist, yr);
                     inc = getClosestData(incomeLookup.district, normDist, yr);
                     pov = getClosestData(povertyLookup.district, normDist, yr);
                     gini = getClosestData(inequalityLookup.district, normDist, yr);
+                    uRate = getClosestData(unemploymentLookup.district, normDist, yr);
+                    areaKm2 = geoAreaCache.district[normDist] || '';
                 } else if (normSt) {
                     pop = getClosestData(popLookup.state, normSt, yr);
                     inc = getClosestData(incomeLookup.state, normSt, yr);
                     pov = getClosestData(povertyLookup.state, normSt, yr);
                     gini = getClosestData(inequalityLookup.state, normSt, yr);
+                    uRate = getClosestData(unemploymentLookup.state, normSt, yr);
+                    areaKm2 = geoAreaCache.state[normSt] || '';
+                }
+
+                if (pop && areaKm2) {
+                    popDensity = (pop / areaKm2).toFixed(1);
+                }
+
+                // Calculate Crime Rate per 100k
+                let crimeRate = '';
+                let crimes = Number(row.crimes) || 0;
+                if (pop > 0) {
+                    crimeRate = ((crimes / pop) * 100000).toFixed(1);
+                }
+
+                // Calculate Socioeconomic Risk Score
+                let riskScore = '';
+                if (inc !== '' && pov !== '') {
+                    let incRisk = (1 - (Math.min(Math.max(inc, 2500), 12500) - 2500) / 10000) * 10;
+                    let povRisk = (Math.min(Math.max(pov, 0), 25) / 25) * 10;
+                    let safeGini = gini !== '' ? gini : 0.35;
+                    let giniRisk = (Math.min(Math.max(safeGini, 0.25), 0.45) - 0.25) / 0.2 * 10;
+                    let safeUrate = uRate !== '' ? uRate : 3.5;
+                    let unempRisk = (Math.min(Math.max(safeUrate, 2), 10) - 2) / 8 * 10;
+                    
+                    riskScore = ((incRisk * 0.30) + (povRisk * 0.30) + (unempRisk * 0.25) + (giniRisk * 0.15)).toFixed(1);
                 }
 
                 return {
@@ -644,15 +718,19 @@
                     Category: row.category || '',
                     Type: row.type || '',
                     Year: yr,
-                    Crimes: row.crimes || 0,
-                    Population_Estimate: pop,
-                    Median_Income: inc,
+                    Crimes: crimes,
+                    Population: pop,
+                    Area_SqKm: areaKm2 ? areaKm2.toFixed(1) : '',
+                    Density_Per_SqKm: popDensity,
+                    Crime_Rate_Per_100k: crimeRate,
+                    Median_Income_RM: inc,
                     Relative_Poverty_Pct: pov,
-                    Gini_Coefficient: gini
+                    Unemployment_Pct: uRate,
+                    Gini_Coefficient: gini,
+                    Socioeconomic_Risk_Score: riskScore
                 };
             });
 
-            // Convert to CSV and trigger browser download
             const csvString = Papa.unparse(exportData);
             const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -664,7 +742,6 @@
             document.body.removeChild(link);
         });
 
-        // Normalize geographical names
         function normalizeName(name) {
             if (!name) return "";
             return name.toLowerCase()
@@ -719,7 +796,6 @@
             const activeYears = availableYears.filter(y => y !== 'All').sort();
             activeYears.forEach(y => yearCounts[y] = 0);
 
-            // Aggregate data by year matching current Category and Type filters
             rawData.forEach(row => {
                 if (!row.state || row.state === 'Malaysia') return;
                 if (row.district === 'All' || row.district === 'all') return; 
@@ -735,11 +811,10 @@
 
             const dataPoints = activeYears.map(y => yearCounts[y]);
 
-            // Set dynamic styles based on the year slider selection for a Line Chart
-            const lineColor = 'rgba(220, 38, 38, 0.8)'; // Red 600
-            const fillColor = 'rgba(220, 38, 38, 0.1)'; // Light red fill
+            const lineColor = 'rgba(220, 38, 38, 0.8)';
+            const fillColor = 'rgba(220, 38, 38, 0.1)'; 
             const defaultPointColor = 'rgba(239, 68, 68, 1)'; 
-            const highlightPointColor = 'rgba(153, 27, 27, 1)'; // Darker Red for active year
+            const highlightPointColor = 'rgba(153, 27, 27, 1)'; 
 
             const pointBgColors = activeYears.map(y => y === filters.year ? highlightPointColor : defaultPointColor);
             const pointRadii = activeYears.map(y => y === filters.year ? 6 : 3);
@@ -768,7 +843,7 @@
                             pointRadius: pointRadii,
                             pointHoverRadius: 6,
                             fill: true,
-                            tension: 0.3 // Adds a slight smooth curve to the line
+                            tension: 0.3 
                         }]
                     },
                     options: {
@@ -802,13 +877,13 @@
 
         // --- Rendering Map Elements ---
         function getColor(d, max) {
-            if (d === 0) return '#f8fafc'; // Empty / No Data
-            return d > max * 0.8 ? '#7f1d1d' : // Red 900
-                   d > max * 0.6 ? '#b91c1c' : // Red 700
-                   d > max * 0.4 ? '#ef4444' : // Red 500
-                   d > max * 0.2 ? '#f87171' : // Red 400
-                   d > 0         ? '#fca5a5' : // Red 300
-                                   '#fee2e2';  // Red 100
+            if (d === 0) return '#f8fafc'; 
+            return d > max * 0.8 ? '#7f1d1d' : 
+                   d > max * 0.6 ? '#b91c1c' : 
+                   d > max * 0.4 ? '#ef4444' : 
+                   d > max * 0.2 ? '#f87171' : 
+                   d > 0         ? '#fca5a5' : 
+                                   '#fee2e2';  
         }
 
         function updateMap() {
@@ -840,12 +915,11 @@
                     const locData = counts[normName] || { total: 0, types: {} };
                     const crimeCount = locData.total;
                     
-                    // --- Population & Crime Rate Logic ---
+                    // --- Population & Density Logic ---
                     let popHtml = '';
                     const levelData = popLookup[filters.level];
                     
                     if (levelData && levelData[normName]) {
-                        // Find matching year, or fallback to the most recent year available
                         let yearTarget = filters.year === 'All' ? '2023' : filters.year; 
                         let popCount = levelData[normName][yearTarget];
                         
@@ -858,15 +932,26 @@
                         }
                         
                         if (popCount) {
-                            // Calculate Crime Rate per 100,000 population
                             let rate = crimeCount > 0 ? ((crimeCount / popCount) * 100000).toFixed(1) : 0;
+                            
+                            // Turf JS Cached Area
+                            let areaSqKm = geoAreaCache[filters.level][normName] || 0;
+                            let densityStr = "N/A";
+                            if (areaSqKm > 0) {
+                                densityStr = (popCount / areaSqKm).toLocaleString(undefined, {maximumFractionDigits: 0}) + ' /km²';
+                            }
+
                             popHtml = `
-                                <div class="text-xs text-gray-600 flex justify-between items-center mt-1.5">
+                                <div class="text-[11px] text-gray-600 flex justify-between items-center mt-1.5 border-t border-gray-100 pt-1.5">
                                     <span>Pop. (${yearTarget}):</span>
                                     <span class="font-bold text-blue-700 ml-3">${Math.round(popCount).toLocaleString()}</span>
                                 </div>
                                 <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5">
-                                    <span>Rate / 100k:</span>
+                                    <span>Density:</span>
+                                    <span class="font-bold text-gray-700 ml-3">${densityStr}</span>
+                                </div>
+                                <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5">
+                                    <span>Crime Rate / 100k:</span>
                                     <span class="font-bold ${rate > 0 ? 'text-red-600' : 'text-gray-400'} ml-3">
                                         ${rate}
                                     </span>
@@ -878,26 +963,23 @@
                     // --- Income Logic ---
                     let incomeHtml = '';
                     const incomeLevelData = incomeLookup[filters.level];
-                    let incVal = undefined; // Lift scope for risk calculation
+                    let incVal = undefined; 
                     if (incomeLevelData && incomeLevelData[normName]) {
-                        // Household income data is surveyed every few years (e.g., 2016, 2019, 2022)
                         let yearTarget = filters.year === 'All' ? '2022' : filters.year; 
                         incVal = incomeLevelData[normName][yearTarget];
                         
                         if (!incVal) {
                             const availableYrs = Object.keys(incomeLevelData[normName]).sort().reverse();
                             if(availableYrs.length > 0) {
-                                // Find closest survey year prior to or equal to map selection
                                 let targetYrNum = filters.year === 'All' ? 9999 : parseInt(filters.year);
                                 let closestYr = availableYrs.find(y => parseInt(y) <= targetYrNum) || availableYrs[0];
                                 yearTarget = closestYr;
                                 incVal = incomeLevelData[normName][yearTarget];
                             }
                         }
-                        
                         if (incVal) {
                             incomeHtml = `
-                                <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5">
+                                <div class="text-[11px] text-gray-600 flex justify-between items-center mt-1.5 border-t border-gray-100 pt-1.5">
                                     <span>Med. Income (${yearTarget}):</span>
                                     <span class="font-bold text-green-700 ml-3">RM ${incVal.toLocaleString()}</span>
                                 </div>
@@ -908,23 +990,20 @@
                     // --- Poverty Logic ---
                     let povertyHtml = '';
                     const povertyLevelData = povertyLookup[filters.level];
-                    let povVal = undefined; // Lift scope for risk calculation
+                    let povVal = undefined;
                     if (povertyLevelData && povertyLevelData[normName]) {
-                        // Poverty data is surveyed every few years (e.g., 2016, 2019, 2022)
                         let yearTarget = filters.year === 'All' ? '2022' : filters.year; 
                         povVal = povertyLevelData[normName][yearTarget];
                         
                         if (povVal === undefined) {
                             const availableYrs = Object.keys(povertyLevelData[normName]).sort().reverse();
                             if(availableYrs.length > 0) {
-                                // Find closest survey year prior to or equal to map selection
                                 let targetYrNum = filters.year === 'All' ? 9999 : parseInt(filters.year);
                                 let closestYr = availableYrs.find(y => parseInt(y) <= targetYrNum) || availableYrs[0];
                                 yearTarget = closestYr;
                                 povVal = povertyLevelData[normName][yearTarget];
                             }
                         }
-                        
                         if (povVal !== undefined) {
                             povertyHtml = `
                                 <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5">
@@ -935,30 +1014,54 @@
                         }
                     }
 
+                    // --- Unemployment Logic ---
+                    let unempHtml = '';
+                    const unempLevelData = unemploymentLookup[filters.level];
+                    let uRateVal = undefined;
+                    if (unempLevelData && unempLevelData[normName]) {
+                        let yearTarget = filters.year === 'All' ? '2023' : filters.year; 
+                        uRateVal = unempLevelData[normName][yearTarget];
+                        
+                        if (uRateVal === undefined) {
+                            const availableYrs = Object.keys(unempLevelData[normName]).sort().reverse();
+                            if(availableYrs.length > 0) {
+                                let targetYrNum = filters.year === 'All' ? 9999 : parseInt(filters.year);
+                                let closestYr = availableYrs.find(y => parseInt(y) <= targetYrNum) || availableYrs[0];
+                                yearTarget = closestYr;
+                                uRateVal = unempLevelData[normName][yearTarget];
+                            }
+                        }
+                        if (uRateVal !== undefined) {
+                            unempHtml = `
+                                <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5">
+                                    <span>Unemployment (${yearTarget}):</span>
+                                    <span class="font-bold text-pink-600 ml-3">${uRateVal.toFixed(1)}%</span>
+                                </div>
+                            `;
+                        }
+                    }
+
                     // --- Inequality Logic ---
                     let inequalityHtml = '';
                     const inequalityLevelData = inequalityLookup[filters.level];
-                    let giniVal = undefined; // Lift scope for risk calculation
+                    let giniVal = undefined; 
                     if (inequalityLevelData && inequalityLevelData[normName]) {
-                        // Inequality data is surveyed every few years
                         let yearTarget = filters.year === 'All' ? '2022' : filters.year; 
                         giniVal = inequalityLevelData[normName][yearTarget];
                         
                         if (giniVal === undefined) {
                             const availableYrs = Object.keys(inequalityLevelData[normName]).sort().reverse();
                             if(availableYrs.length > 0) {
-                                // Find closest survey year prior to or equal to map selection
                                 let targetYrNum = filters.year === 'All' ? 9999 : parseInt(filters.year);
                                 let closestYr = availableYrs.find(y => parseInt(y) <= targetYrNum) || availableYrs[0];
                                 yearTarget = closestYr;
                                 giniVal = inequalityLevelData[normName][yearTarget];
                             }
                         }
-                        
                         if (giniVal !== undefined) {
                             inequalityHtml = `
                                 <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5">
-                                    <span>Gini Coefficient (${yearTarget}):</span>
+                                    <span>Income Inequality (Gini) (${yearTarget}):</span>
                                     <span class="font-bold text-purple-600 ml-3">${giniVal.toFixed(3)}</span>
                                 </div>
                             `;
@@ -967,23 +1070,19 @@
 
                     // --- Socioeconomic Risk Score Logic ---
                     let riskHtml = '';
-                    // Need at least income and poverty to make a fair estimate
                     if (incVal !== undefined && povVal !== undefined) {
-                        // Calculate individual risk components (0 to 10 scale)
-                        // Income: ~RM2.5k represents max risk (10), ~RM12.5k represents min risk (0)
+                        // Weighted Average: Income(30%), Poverty(30%), Unemployment(25%), Gini(15%)
                         let incRisk = (1 - (Math.min(Math.max(incVal, 2500), 12500) - 2500) / 10000) * 10;
-                        
-                        // Poverty: 25%+ is max risk (10), 0% is min risk (0)
                         let povRisk = (Math.min(Math.max(povVal, 0), 25) / 25) * 10;
                         
-                        // Gini: 0.45+ is max risk (10), 0.25 is min risk (0). Fallback to median 0.35 if missing.
                         let safeGini = giniVal !== undefined ? giniVal : 0.35;
                         let giniRisk = (Math.min(Math.max(safeGini, 0.25), 0.45) - 0.25) / 0.2 * 10;
+
+                        let safeUrate = uRateVal !== undefined ? uRateVal : 3.5;
+                        let unempRisk = (Math.min(Math.max(safeUrate, 2), 10) - 2) / 8 * 10;
                         
-                        // Weighted Average: Income(40%), Poverty(40%), Gini(20%)
-                        let totalRisk = (incRisk * 0.4) + (povRisk * 0.4) + (giniRisk * 0.2);
+                        let totalRisk = (incRisk * 0.30) + (povRisk * 0.30) + (unempRisk * 0.25) + (giniRisk * 0.15);
                         
-                        // Color coding based on severity
                         let riskColor = totalRisk >= 7 ? 'text-red-600' : (totalRisk >= 4 ? 'text-orange-500' : 'text-green-600');
                         
                         riskHtml = `
@@ -1007,7 +1106,7 @@
                                     <span class="font-medium text-gray-700">${count.toLocaleString()}</span>
                                 </div>
                             `;
-                        }); // <-- ADDED MISSING CLOSING BRACKET AND PARENTHESIS HERE
+                        });
                         typesHtml += '</div>';
                     }
                     
@@ -1025,6 +1124,7 @@
                             ${popHtml}
                             ${incomeHtml}
                             ${povertyHtml}
+                            ${unempHtml}
                             ${inequalityHtml}
                             ${riskHtml}
                             ${typesHtml}
@@ -1055,7 +1155,7 @@
             }).addTo(map);
 
             updateLegend(maxCrimes);
-            renderChart(); // Make sure the chart updates perfectly in sync with the map!
+            renderChart();
         }
 
         function updateLegend(maxCrimes) {

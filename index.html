@@ -58,26 +58,10 @@
             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">1. Load Dataset</label>
             
             <!-- API Fetch Button -->
-            <button id="fetchApiBtn" class="w-full mb-3 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-xl shadow-sm transition-colors text-sm">
+            <button id="fetchApiBtn" class="w-full mb-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-xl shadow-sm transition-colors text-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
                 Fetch Live API Data
             </button>
-
-            <div class="flex items-center gap-3 mb-3">
-                <div class="h-px bg-gray-200 flex-1"></div>
-                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">OR</span>
-                <div class="h-px bg-gray-200 flex-1"></div>
-            </div>
-
-            <!-- CSV Upload Fallback -->
-            <div class="relative flex items-center justify-center w-full">
-                <label for="csvFileInput" class="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-red-50 hover:border-red-300 transition-all">
-                    <div class="flex flex-col items-center justify-center pt-4 pb-4">
-                        <p class="text-sm text-gray-500" id="uploadLabel"><span class="font-semibold text-red-600">Click to upload</span> CSV file</p>
-                    </div>
-                    <input id="csvFileInput" type="file" accept=".csv" class="hidden" />
-                </label>
-            </div>
         </div>
 
         <!-- Filters -->
@@ -482,7 +466,7 @@
         // API Fetch Logic
         document.getElementById('fetchApiBtn').addEventListener('click', async () => {
             const btn = document.getElementById('fetchApiBtn');
-            const originalHtml = btn.innerHTML;
+            let originalHtml = btn.innerHTML;
             
             try {
                 showToast("Fetching live data from data.gov.my...");
@@ -502,7 +486,11 @@
                     throw new Error("Invalid data format returned");
                 }
                 
-                document.getElementById('uploadLabel').innerHTML = `Using <span class="font-bold text-red-600">Live API Data</span>`;
+                // Update button to show success state
+                originalHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Live Data Loaded`;
+                btn.classList.replace('bg-red-600', 'bg-green-600');
+                btn.classList.replace('hover:bg-red-700', 'hover:bg-green-700');
+
                 populateFilters();
                 updateMap();
                 displayRandomFact();
@@ -510,37 +498,11 @@
                 
             } catch (err) {
                 console.error(err);
-                showToast("Failed to fetch API data. Please try uploading the CSV.");
+                showToast("Failed to fetch API data. Please try again later.");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
             }
-        });
-
-        // Local File Parsing Logic
-        document.getElementById('csvFileInput').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if(!file) return;
-            
-            document.getElementById('uploadLabel').innerHTML = `File loaded: <span class="font-bold text-gray-800">${file.name}</span>`;
-            showToast("Processing dataset...");
-
-            Papa.parse(file, {
-                header: true,
-                dynamicTyping: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    rawData = results.data;
-                    populateFilters();
-                    updateMap();
-                    displayRandomFact();
-                    showToast("Dataset successfully applied to map!");
-                },
-                error: function(err) {
-                    showToast("Error reading CSV file.");
-                    console.error(err);
-                }
-            });
         });
 
         function populateFilters() {

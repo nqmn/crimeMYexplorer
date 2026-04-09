@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -60,7 +60,7 @@
             <!-- API Fetch Button -->
             <button id="fetchApiBtn" class="w-full mb-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-xl shadow-sm transition-colors text-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                Fetch Live API Data
+                Fetch OpenDOSM Data
             </button>
         </div>
 
@@ -169,6 +169,11 @@
         let inequalityLookup = { state: {}, district: {} }; // Add Inequality Data Storage
         let unemploymentLookup = { state: {}, district: {} }; // Add Unemployment Data Storage
         let geoAreaCache = { state: {}, district: {} }; // Store Turf.js Area Calculations
+        const DATA_SOURCES = {
+            crimeCsv: 'https://storage.data.gov.my/publicsafety/crime_district.csv',
+            crimeApi: 'https://api.data.gov.my/data-catalogue/?id=crime_district',
+            crimeDatasetPage: 'https://open.dosm.gov.my/data-catalogue/crime_district'
+        };
 
         let filters = {
             level: 'state', // Default to state for clearer macroscopic view first
@@ -447,6 +452,55 @@
             }, duration);
         }
 
+        async function fetchCrimeDataset() {
+            try {
+                const response = await fetch(DATA_SOURCES.crimeCsv);
+                if (!response.ok) throw new Error("OpenDOSM CSV response error");
+
+                const csvText = await response.text();
+                const parsed = Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true
+                });
+
+                if (parsed.errors.length > 0) {
+                    throw new Error(parsed.errors[0].message || "CSV parsing error");
+                }
+
+                if (!Array.isArray(parsed.data) || parsed.data.length === 0) {
+                    throw new Error("OpenDOSM CSV returned no rows");
+                }
+
+                return {
+                    rows: parsed.data,
+                    sourceLabel: 'OpenDOSM CSV'
+                };
+            } catch (csvErr) {
+                console.warn('OpenDOSM CSV fetch failed, falling back to API.', csvErr);
+
+                const response = await fetch(DATA_SOURCES.crimeApi);
+                if (!response.ok) throw new Error("API response error");
+
+                const jsonRes = await response.json();
+
+                if (jsonRes && jsonRes.data && Array.isArray(jsonRes.data)) {
+                    return {
+                        rows: jsonRes.data,
+                        sourceLabel: 'data.gov.my API'
+                    };
+                }
+
+                if (Array.isArray(jsonRes)) {
+                    return {
+                        rows: jsonRes,
+                        sourceLabel: 'data.gov.my API'
+                    };
+                }
+
+                throw new Error("Invalid data format returned");
+            }
+        }
+
         ['level', 'category', 'type'].forEach(f => {
             document.getElementById(f + 'Filter').addEventListener('change', (e) => {
                 filters[f] = e.target.value;
@@ -469,36 +523,27 @@
             let originalHtml = btn.innerHTML;
             
             try {
-                showToast("Fetching live data from data.gov.my...");
+                showToast("Fetching crime data from OpenDOSM...");
                 btn.disabled = true;
                 btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Loading Data...`;
                 
-                const response = await fetch('https://api.data.gov.my/data-catalogue/?id=crime_district');
-                if (!response.ok) throw new Error("API response error");
-                
-                const jsonRes = await response.json();
-                
-                if (jsonRes && jsonRes.data && Array.isArray(jsonRes.data)) {
-                    rawData = jsonRes.data;
-                } else if (Array.isArray(jsonRes)) {
-                    rawData = jsonRes;
-                } else {
-                    throw new Error("Invalid data format returned");
-                }
+                const { rows, sourceLabel } = await fetchCrimeDataset();
+                rawData = rows;
                 
                 // Update button to show success state
                 originalHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Live Data Loaded`;
                 btn.classList.replace('bg-red-600', 'bg-green-600');
                 btn.classList.replace('hover:bg-red-700', 'hover:bg-green-700');
+                btn.title = `Loaded from ${sourceLabel}. Dataset: ${DATA_SOURCES.crimeDatasetPage}`;
 
                 populateFilters();
                 updateMap();
                 displayRandomFact();
-                showToast("Live dataset successfully loaded!");
+                showToast(`Crime dataset loaded from ${sourceLabel}.`);
                 
             } catch (err) {
                 console.error(err);
-                showToast("Failed to fetch API data. Please try again later.");
+                showToast("Failed to fetch OpenDOSM crime data. Please try again later.");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
@@ -1023,7 +1068,7 @@
                         if (giniVal !== undefined) {
                             inequalityHtml = `
                                 <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5">
-                                    <span>Income Inequality (Gini) (${yearTarget}):</span>
+                                    <span>Income Inequality (${yearTarget}):</span>
                                     <span class="font-bold text-purple-600 ml-3">${giniVal.toFixed(3)}</span>
                                 </div>
                             `;

@@ -1,7 +1,5 @@
 # CrimeMYexplorer
 
-Live site: <https://nqmn.github.io/crimeMYexplorer/>
-
 `crimeMYexplorer` is a single-page Malaysia crime explorer in `index.html`. It combines live district-level crime data with administrative boundaries and socioeconomic indicators so users can switch between a crime heatmap and a socioeconomic risk map.
 
 The page uses Leaflet for mapping, Chart.js for the yearly trend chart, Papa Parse for CSV export, and Turf.js for area and density calculations.

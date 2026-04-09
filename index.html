@@ -37,7 +37,7 @@
     <!-- Map Container -->
     <div id="map"></div>
     
-    <!-- UI Overlay: Control Panel -->
+    <!-- UI Overlay: Control Panel (Left) -->
     <div class="absolute top-4 left-4 sm:top-6 sm:left-6 z-[1000] w-[90%] sm:w-80 max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-2xl border border-gray-100">
         <div class="flex items-center justify-between mb-5 gap-3">
             <div class="flex items-center gap-3">
@@ -146,6 +146,19 @@
         </div>
     </div>
 
+    <!-- UI Overlay: Right Info Panel (Hidden by default) -->
+    <div id="infoPanel" class="absolute top-4 right-4 sm:top-6 sm:right-6 z-[1001] w-[90%] sm:w-[340px] max-h-[85vh] overflow-y-auto bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-2xl border border-gray-100 hidden transition-all flex flex-col">
+        <div class="flex items-center justify-between mb-4 border-b border-gray-200 pb-3 shrink-0">
+            <h2 id="infoPanelTitle" class="text-xl font-extrabold text-gray-900 tracking-tight uppercase truncate pr-2"></h2>
+            <button id="closeInfoPanel" class="text-gray-400 hover:text-red-500 transition-colors p-1.5 bg-gray-100 hover:bg-red-50 rounded-lg shadow-sm" title="Close Panel">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div id="infoPanelContent" class="space-y-1 overflow-y-auto grow pr-1">
+            <!-- Dynamic Content Injected Here -->
+        </div>
+    </div>
+
     <!-- UI Overlay: Legend -->
     <div id="legendContainer" class="absolute bottom-6 right-6 z-[1000] bg-white/95 backdrop-blur-md p-4 rounded-xl shadow-xl border border-gray-100 hidden">
         <!-- Legend populated by JS -->
@@ -172,14 +185,16 @@
         let availableYears = ['All'];
         let trendChart = null; // Chart instance
         let currentLayer = 'crime'; // Toggle state: 'crime' | 'risk'
+        let selectedLayer = null; // Track clicked map layer
+        let isFeatureClicked = false; // Prevent map click hiding panel instantly
         
         // Store API Population Data
         let popLookup = { state: {}, district: {} };
-        let incomeLookup = { state: {}, district: {} }; // Add Income Data Storage
-        let povertyLookup = { state: {}, district: {} }; // Add Poverty Data Storage
-        let inequalityLookup = { state: {}, district: {} }; // Add Inequality Data Storage
-        let unemploymentLookup = { state: {}, district: {} }; // Add Unemployment Data Storage
-        let geoAreaCache = { state: {}, district: {} }; // Store Turf.js Area Calculations
+        let incomeLookup = { state: {}, district: {} }; 
+        let povertyLookup = { state: {}, district: {} }; 
+        let inequalityLookup = { state: {}, district: {} }; 
+        let unemploymentLookup = { state: {}, district: {} }; 
+        let geoAreaCache = { state: {}, district: {} }; 
 
         let filters = {
             level: 'state', // Default to state for clearer macroscopic view first
@@ -192,7 +207,7 @@
         async function init() {
             // Initialize Leaflet Map
             map = L.map('map', { zoomControl: false }).setView([4.2105, 101.9758], 6);
-            L.control.zoom({ position: 'topright' }).addTo(map);
+            L.control.zoom({ position: 'topleft' }).addTo(map);
 
             // Clean CartoDB Voyager Basemap
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
@@ -200,6 +215,27 @@
                 subdomains: 'abcd',
                 maxZoom: 20
             }).addTo(map);
+
+            // Map Click Event - Closes Right Panel and Deselects Boundary
+            map.on('click', function() {
+                if (isFeatureClicked) return; // Ignore if feature was just clicked
+                
+                document.getElementById('infoPanel').classList.add('hidden');
+                if (selectedLayer && geojsonLayer) {
+                    geojsonLayer.resetStyle(selectedLayer);
+                    selectedLayer = null;
+                }
+            });
+
+            // Close Right Panel Button
+            document.getElementById('closeInfoPanel').addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('infoPanel').classList.add('hidden');
+                if (selectedLayer && geojsonLayer) {
+                    geojsonLayer.resetStyle(selectedLayer);
+                    selectedLayer = null;
+                }
+            });
 
             showToast("Fetching administrative boundaries...");
 
@@ -446,7 +482,6 @@
         }
 
         // --- Data Fetching Helpers ---
-        // Helper function to safely fetch the best matching metric for the slider year
         function getMetric(lookup, level, normName, targetYear) {
             const levelData = lookup[level];
             if (!levelData || !levelData[normName]) return { value: undefined, year: targetYear };
@@ -463,7 +498,6 @@
             return { value: undefined, year: targetYear };
         }
 
-        // Calculates the 0-10 risk score uniformly
         function getRiskScore(normName) {
             let incVal = getMetric(incomeLookup, filters.level, normName, filters.year === 'All' ? '2022' : filters.year).value;
             let povVal = getMetric(povertyLookup, filters.level, normName, filters.year === 'All' ? '2022' : filters.year).value;
@@ -951,6 +985,10 @@
         }
 
         function updateMap() {
+            // Close Right Info Panel on global updates to prevent stale data
+            document.getElementById('infoPanel').classList.add('hidden');
+            selectedLayer = null;
+
             if (geojsonLayer) map.removeLayer(geojsonLayer);
             
             const geojsonData = filters.level === 'state' ? stateGeojson : districtGeojson;
@@ -1001,7 +1039,7 @@
                     let unempData = getMetric(unemploymentLookup, filters.level, normName, yearTarget);
                     let giniData = getMetric(inequalityLookup, filters.level, normName, filters.year === 'All' ? '2022' : filters.year);
 
-                    // --- Population & Density Logic ---
+                    // --- HTML Segment Generators ---
                     let popHtml = '';
                     if (popData.value !== undefined) {
                         let rate = crimeCount > 0 ? ((crimeCount / popData.value) * 100000).toFixed(1) : 0;
@@ -1011,79 +1049,73 @@
                             densityStr = (popData.value / areaSqKm).toLocaleString(undefined, {maximumFractionDigits: 0}) + ' /km²';
                         }
                         popHtml = `
-                            <div class="text-[11px] text-gray-600 flex justify-between items-center mt-1.5 border-t border-gray-100 pt-1.5">
+                            <div class="text-xs text-gray-600 flex justify-between items-center mt-1.5 border-t border-gray-100 pt-1.5">
                                 <span>Pop. (${popData.year}):</span>
                                 <span class="font-bold text-blue-700 ml-3">${Math.round(popData.value).toLocaleString()}</span>
                             </div>
-                            <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5">
+                            <div class="text-xs text-gray-600 flex justify-between items-center mt-0.5">
                                 <span>Density:</span>
                                 <span class="font-bold text-gray-700 ml-3">${densityStr}</span>
                             </div>
-                            <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5">
+                            <div class="text-xs text-gray-600 flex justify-between items-center mt-0.5">
                                 <span>Crime Rate / 100k:</span>
                                 <span class="font-bold ${rate > 0 ? 'text-red-600' : 'text-gray-400'} ml-3">${rate}</span>
                             </div>
                         `;
                     }
                     
-                    // --- Income Logic ---
                     let incomeHtml = '';
                     if (incData.value !== undefined) {
                         incomeHtml = `
-                            <div class="text-[11px] text-gray-600 flex justify-between items-center mt-1.5 border-t border-gray-100 pt-1.5">
+                            <div class="text-xs text-gray-600 flex justify-between items-center mt-1.5 border-t border-gray-100 pt-1.5">
                                 <span>Med. Income (${incData.year}):</span>
                                 <span class="font-bold text-green-700 ml-3">RM ${incData.value.toLocaleString()}</span>
                             </div>
                         `;
                     }
                     
-                    // --- Poverty Logic ---
                     let povertyHtml = '';
                     if (povData.value !== undefined) {
                         povertyHtml = `
-                            <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5">
+                            <div class="text-xs text-gray-600 flex justify-between items-center mt-0.5">
                                 <span>Rel. Poverty (${povData.year}):</span>
                                 <span class="font-bold text-orange-600 ml-3">${povData.value.toFixed(1)}%</span>
                             </div>
                         `;
                     }
 
-                    // --- Unemployment Logic ---
                     let unempHtml = '';
                     if (unempData.value !== undefined) {
                         unempHtml = `
-                            <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5">
+                            <div class="text-xs text-gray-600 flex justify-between items-center mt-0.5">
                                 <span>Unemployment (${unempData.year}):</span>
                                 <span class="font-bold text-pink-600 ml-3">${unempData.value.toFixed(1)}%</span>
                             </div>
                         `;
                     }
 
-                    // --- Inequality Logic ---
                     let inequalityHtml = '';
                     if (giniData.value !== undefined) {
                         inequalityHtml = `
-                            <div class="text-[11px] text-gray-600 flex justify-between items-center mt-0.5">
+                            <div class="text-xs text-gray-600 flex justify-between items-center mt-0.5">
                                 <span>Income Inequality (Gini) (${giniData.year}):</span>
                                 <span class="font-bold text-purple-600 ml-3">${giniData.value.toFixed(3)}</span>
                             </div>
                         `;
                     }
 
-                    // --- Socioeconomic Risk Score Logic ---
                     let riskHtml = '';
                     let totalRisk = getRiskScore(normName);
                     if (totalRisk !== null) {
                         let riskColor = totalRisk >= 7 ? 'text-red-600' : (totalRisk >= 4 ? 'text-orange-500' : 'text-green-600');
                         riskHtml = `
-                            <div class="text-[11px] text-gray-600 flex justify-between items-center mt-1.5 pt-1.5 border-t border-gray-200 bg-gray-50 -mx-1 px-1 rounded shadow-inner">
-                                <span class="font-bold uppercase tracking-wide text-[9px] text-gray-500">Socioeconomic Risk:</span>
-                                <span class="font-extrabold ${riskColor} ml-3 text-xs">${totalRisk.toFixed(1)} / 10</span>
+                            <div class="text-xs text-gray-600 flex justify-between items-center mt-1.5 pt-1.5 border-t border-gray-200 bg-gray-50 -mx-1 px-1 rounded shadow-inner">
+                                <span class="font-bold uppercase tracking-wide text-[10px] text-gray-500">Socioeconomic Risk:</span>
+                                <span class="font-extrabold ${riskColor} ml-3 text-[13px]">${totalRisk.toFixed(1)} / 10</span>
                             </div>
                         `;
                     }
 
-                    // --- Types Breakdown ---
                     let typesHtml = '';
                     if (crimeCount > 0 && locData.types) {
                         const sortedTypes = Object.entries(locData.types).sort((a, b) => b[1] - a[1]);
@@ -1091,7 +1123,7 @@
                         sortedTypes.forEach(([type, count]) => {
                             const typeName = type.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
                             typesHtml += `
-                                <div class="flex justify-between items-center text-[11px]">
+                                <div class="flex justify-between items-center text-xs">
                                     <span class="text-gray-500 truncate mr-3 flex-1">${typeName}</span>
                                     <span class="font-medium text-gray-700">${count.toLocaleString()}</span>
                                 </div>
@@ -1100,45 +1132,74 @@
                         typesHtml += '</div>';
                     }
                     
+                    // Unified inner HTML for both Tooltip and Sidebar
+                    const innerHtml = `
+                        <div class="text-sm text-gray-600 flex justify-between items-center mt-1 mb-1">
+                            <span>Total Crimes:</span>
+                            <span class="font-bold ${crimeCount > 0 ? 'text-red-600' : 'text-gray-400'} ml-3">
+                                ${crimeCount.toLocaleString()}
+                            </span>
+                        </div>
+                        ${popHtml}
+                        ${incomeHtml}
+                        ${povertyHtml}
+                        ${unempHtml}
+                        ${inequalityHtml}
+                        ${riskHtml}
+                        ${typesHtml}
+                    `;
+
                     const tooltipContent = `
                         <div class="px-1 min-w-[180px] max-w-[240px]">
                             <div class="font-bold text-gray-800 text-[14px] border-b border-gray-200 pb-1 mb-1.5 uppercase tracking-wide">
                                 ${name}
                             </div>
-                            <div class="text-xs text-gray-600 flex justify-between items-center">
-                                <span>Total Crimes:</span>
-                                <span class="font-bold ${crimeCount > 0 ? 'text-red-600' : 'text-gray-400'} ml-3">
-                                    ${crimeCount.toLocaleString()}
-                                </span>
-                            </div>
-                            ${popHtml}
-                            ${incomeHtml}
-                            ${povertyHtml}
-                            ${unempHtml}
-                            ${inequalityHtml}
-                            ${riskHtml}
-                            ${typesHtml}
+                            ${innerHtml}
                         </div>
                     `;
                     
+                    // Bind Hover Tooltip
                     layer.bindTooltip(tooltipContent, {
                         direction: 'top',
                         sticky: true,
                         className: 'bg-white/95 backdrop-blur shadow-2xl rounded-lg border border-gray-100 p-2'
                     });
                     
+                    // Map Interaction Handlers
                     layer.on({
                         mouseover: function(e) {
-                            const l = e.target;
-                            l.setStyle({
-                                weight: 3,
-                                color: '#1e293b', 
-                                fillOpacity: 1
-                            });
-                            l.bringToFront();
+                            if (selectedLayer !== e.target) {
+                                const l = e.target;
+                                l.setStyle({ weight: 3, color: '#1e293b', fillOpacity: 1 });
+                                l.bringToFront();
+                            }
                         },
                         mouseout: function(e) {
-                            geojsonLayer.resetStyle(e.target);
+                            if (selectedLayer !== e.target) {
+                                geojsonLayer.resetStyle(e.target);
+                            }
+                        },
+                        click: function(e) {
+                            // Stop map click event from firing and instantly closing the panel
+                            isFeatureClicked = true;
+                            setTimeout(() => isFeatureClicked = false, 100);
+                            
+                            if (e.originalEvent) {
+                                L.DomEvent.stopPropagation(e.originalEvent);
+                            }
+
+                            // Populate Right Info Panel
+                            document.getElementById('infoPanelTitle').textContent = name;
+                            document.getElementById('infoPanelContent').innerHTML = innerHtml;
+                            document.getElementById('infoPanel').classList.remove('hidden');
+
+                            // Manage visual selection states
+                            if (selectedLayer && selectedLayer !== e.target) {
+                                geojsonLayer.resetStyle(selectedLayer);
+                            }
+                            selectedLayer = e.target;
+                            e.target.setStyle({ weight: 4, color: '#2563eb', fillOpacity: 1 });
+                            e.target.bringToFront();
                         }
                     });
                 }

@@ -805,10 +805,11 @@
                     // --- Income Logic ---
                     let incomeHtml = '';
                     const incomeLevelData = incomeLookup[filters.level];
+                    let incVal = undefined; // Lift scope for risk calculation
                     if (incomeLevelData && incomeLevelData[normName]) {
                         // Household income data is surveyed every few years (e.g., 2016, 2019, 2022)
                         let yearTarget = filters.year === 'All' ? '2022' : filters.year; 
-                        let incVal = incomeLevelData[normName][yearTarget];
+                        incVal = incomeLevelData[normName][yearTarget];
                         
                         if (!incVal) {
                             const availableYrs = Object.keys(incomeLevelData[normName]).sort().reverse();
@@ -834,10 +835,11 @@
                     // --- Poverty Logic ---
                     let povertyHtml = '';
                     const povertyLevelData = povertyLookup[filters.level];
+                    let povVal = undefined; // Lift scope for risk calculation
                     if (povertyLevelData && povertyLevelData[normName]) {
                         // Poverty data is surveyed every few years (e.g., 2016, 2019, 2022)
                         let yearTarget = filters.year === 'All' ? '2022' : filters.year; 
-                        let povVal = povertyLevelData[normName][yearTarget];
+                        povVal = povertyLevelData[normName][yearTarget];
                         
                         if (povVal === undefined) {
                             const availableYrs = Object.keys(povertyLevelData[normName]).sort().reverse();
@@ -863,10 +865,11 @@
                     // --- Inequality Logic ---
                     let inequalityHtml = '';
                     const inequalityLevelData = inequalityLookup[filters.level];
+                    let giniVal = undefined; // Lift scope for risk calculation
                     if (inequalityLevelData && inequalityLevelData[normName]) {
                         // Inequality data is surveyed every few years
                         let yearTarget = filters.year === 'All' ? '2022' : filters.year; 
-                        let giniVal = inequalityLevelData[normName][yearTarget];
+                        giniVal = inequalityLevelData[normName][yearTarget];
                         
                         if (giniVal === undefined) {
                             const availableYrs = Object.keys(inequalityLevelData[normName]).sort().reverse();
@@ -887,6 +890,35 @@
                                 </div>
                             `;
                         }
+                    }
+
+                    // --- Socioeconomic Risk Score Logic ---
+                    let riskHtml = '';
+                    // Need at least income and poverty to make a fair estimate
+                    if (incVal !== undefined && povVal !== undefined) {
+                        // Calculate individual risk components (0 to 10 scale)
+                        // Income: ~RM2.5k represents max risk (10), ~RM12.5k represents min risk (0)
+                        let incRisk = (1 - (Math.min(Math.max(incVal, 2500), 12500) - 2500) / 10000) * 10;
+                        
+                        // Poverty: 25%+ is max risk (10), 0% is min risk (0)
+                        let povRisk = (Math.min(Math.max(povVal, 0), 25) / 25) * 10;
+                        
+                        // Gini: 0.45+ is max risk (10), 0.25 is min risk (0). Fallback to median 0.35 if missing.
+                        let safeGini = giniVal !== undefined ? giniVal : 0.35;
+                        let giniRisk = (Math.min(Math.max(safeGini, 0.25), 0.45) - 0.25) / 0.2 * 10;
+                        
+                        // Weighted Average: Income(40%), Poverty(40%), Gini(20%)
+                        let totalRisk = (incRisk * 0.4) + (povRisk * 0.4) + (giniRisk * 0.2);
+                        
+                        // Color coding based on severity
+                        let riskColor = totalRisk >= 7 ? 'text-red-600' : (totalRisk >= 4 ? 'text-orange-500' : 'text-green-600');
+                        
+                        riskHtml = `
+                            <div class="text-[11px] text-gray-600 flex justify-between items-center mt-1.5 pt-1.5 border-t border-gray-200 bg-gray-50 -mx-1 px-1 rounded shadow-inner">
+                                <span class="font-bold uppercase tracking-wide text-[9px] text-gray-500">Socioeconomic Risk:</span>
+                                <span class="font-extrabold ${riskColor} ml-3 text-xs">${totalRisk.toFixed(1)} / 10</span>
+                            </div>
+                        `;
                     }
 
                     // --- Types Breakdown ---
@@ -921,6 +953,7 @@
                             ${incomeHtml}
                             ${povertyHtml}
                             ${inequalityHtml}
+                            ${riskHtml}
                             ${typesHtml}
                         </div>
                     `;

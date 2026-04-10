@@ -53,7 +53,7 @@
             </button>
         </div>
         
-        <!-- File Upload -->
+        <!-- File Loading -->
         <div class="mb-5">
             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">1. Load Dataset</label>
             
@@ -147,7 +147,7 @@
     </div>
 
     <!-- UI Overlay: Right Info Panel (Hidden by default) -->
-    <div id="infoPanel" class="absolute top-4 right-4 sm:top-6 sm:right-6 z-[1001] w-[90%] sm:w-[340px] max-h-[85vh] overflow-y-auto bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-2xl border border-gray-100 hidden transition-all flex flex-col">
+    <div id="infoPanel" class="absolute top-4 right-4 sm:top-6 sm:right-6 z-[1001] w-[90%] sm:w-[340px] max-h-[85vh] overflow-y-auto bg-white/80 backdrop-blur-md p-5 rounded-2xl shadow-2xl border border-gray-100 hidden transition-all flex flex-col">
         <div class="flex items-center justify-between mb-4 border-b border-gray-200 pb-3 shrink-0">
             <h2 id="infoPanelTitle" class="text-xl font-extrabold text-gray-900 tracking-tight uppercase truncate pr-2"></h2>
             <button id="closeInfoPanel" class="text-gray-400 hover:text-red-500 transition-colors p-1.5 bg-gray-100 hover:bg-red-50 rounded-lg shadow-sm" title="Close Panel">
@@ -498,13 +498,14 @@
             return { value: undefined, year: targetYear };
         }
 
-        function getRiskScore(normName) {
+        function getRiskScoreDetailed(normName) {
             let incVal = getMetric(incomeLookup, filters.level, normName, filters.year === 'All' ? '2022' : filters.year).value;
             let povVal = getMetric(povertyLookup, filters.level, normName, filters.year === 'All' ? '2022' : filters.year).value;
             let uRateVal = getMetric(unemploymentLookup, filters.level, normName, filters.year === 'All' ? '2023' : filters.year).value;
             let giniVal = getMetric(inequalityLookup, filters.level, normName, filters.year === 'All' ? '2022' : filters.year).value;
 
             if (incVal !== undefined && povVal !== undefined) {
+                // Individual risk components (0-10)
                 let incRisk = (1 - (Math.min(Math.max(incVal, 2500), 12500) - 2500) / 10000) * 10;
                 let povRisk = (Math.min(Math.max(povVal, 0), 25) / 25) * 10;
                 let safeGini = giniVal !== undefined ? giniVal : 0.35;
@@ -512,7 +513,18 @@
                 let safeUrate = uRateVal !== undefined ? uRateVal : 3.5;
                 let unempRisk = (Math.min(Math.max(safeUrate, 2), 10) - 2) / 8 * 10;
                 
-                return (incRisk * 0.30) + (povRisk * 0.30) + (unempRisk * 0.25) + (giniRisk * 0.15);
+                // Final Weighted Score
+                let score = (incRisk * 0.30) + (povRisk * 0.30) + (unempRisk * 0.25) + (giniRisk * 0.15);
+                
+                return {
+                    score: score,
+                    components: {
+                        income: incRisk,
+                        poverty: povRisk,
+                        unemployment: unempRisk,
+                        inequality: giniRisk
+                    }
+                };
             }
             return null;
         }
@@ -1012,9 +1024,31 @@
                         fillColor = getCrimeColor(crimeCount, maxCrimes);
                         fillOp = crimeCount > 0 ? 0.85 : 0.4;
                     } else if (currentLayer === 'risk') {
-                        const riskScore = getRiskScore(normName);
-                        fillColor = getRiskColor(riskScore);
-                        fillOp = riskScore !== null ? 0.85 : 0.4;
+                        const riskDetails = getRiskScoreDetailed(normName);
+                        const locData = counts[normName] || { total: 0 };
+                        const crimeCount = locData.total;
+
+                        if (riskDetails !== null && crimeCount > 0) {
+                            const totalRisk = riskDetails.score;
+                            
+                            let yearTarget = filters.year === 'All' ? '2023' : filters.year; 
+                            let popData = getMetric(popLookup, filters.level, normName, yearTarget);
+                            
+                            let rateNum = 0;
+                            if (popData.value !== undefined && popData.value > 0) {
+                                rateNum = (crimeCount / popData.value) * 100000;
+                            }
+                            
+                            // Normalize crime rate onto 0-10 scale
+                            let crimeScore = Math.min((rateNum / 500) * 10, 10);
+                            
+                            // Overall Area Risk (60% Socioeconomic, 40% Crime)
+                            let combinedRisk = (totalRisk * 0.6) + (crimeScore * 0.4);
+                            
+                            fillColor = getRiskColor(combinedRisk);
+                            fillOp = 0.85;
+                        }
+                        // If riskDetails is null OR crimeCount is 0, it defaults to fillColor = '#f8fafc', fillOp = 0.4
                     }
 
                     return {
@@ -1040,9 +1074,10 @@
                     let giniData = getMetric(inequalityLookup, filters.level, normName, filters.year === 'All' ? '2022' : filters.year);
 
                     // --- HTML Segment Generators ---
+                    let rate = 0;
                     let popHtml = '';
                     if (popData.value !== undefined) {
-                        let rate = crimeCount > 0 ? ((crimeCount / popData.value) * 100000).toFixed(1) : 0;
+                        rate = crimeCount > 0 ? ((crimeCount / popData.value) * 100000).toFixed(1) : 0;
                         let areaSqKm = geoAreaCache[filters.level][normName] || 0;
                         let densityStr = "N/A";
                         if (areaSqKm > 0) {
@@ -1105,15 +1140,101 @@
                     }
 
                     let riskHtml = '';
-                    let totalRisk = getRiskScore(normName);
-                    if (totalRisk !== null) {
+                    let interpretationHtml = '';
+                    let combinedRiskHtml = '';
+                    let riskDetails = getRiskScoreDetailed(normName);
+                    
+                    if (riskDetails !== null) {
+                        const totalRisk = riskDetails.score;
                         let riskColor = totalRisk >= 7 ? 'text-red-600' : (totalRisk >= 4 ? 'text-orange-500' : 'text-green-600');
+                        
                         riskHtml = `
                             <div class="text-xs text-gray-600 flex justify-between items-center mt-1.5 pt-1.5 border-t border-gray-200 bg-gray-50 -mx-1 px-1 rounded shadow-inner">
                                 <span class="font-bold uppercase tracking-wide text-[10px] text-gray-500">Socioeconomic Risk:</span>
                                 <span class="font-extrabold ${riskColor} ml-3 text-[13px]">${totalRisk.toFixed(1)} / 10</span>
                             </div>
                         `;
+
+                        // --- ADVANCED RISK ANALYSIS (COMBINED) ---
+                        if (crimeCount > 0) {
+                            const components = riskDetails.components;
+                            const drivers = [
+                                { label: 'low median earnings', val: components.income * 0.30 },
+                                { label: 'poverty levels', val: components.poverty * 0.30 },
+                                { label: 'lack of employment', val: components.unemployment * 0.25 },
+                                { label: 'wealth inequality', val: components.inequality * 0.15 }
+                            ];
+                            drivers.sort((a, b) => b.val - a.val);
+                            const topDriver = drivers[0].label;
+                            
+                            let rateNum = parseFloat(rate) || 0;
+                            
+                            // Normalize Crime Rate to 0-10 scale (Assuming 500 cases per 100k is maximum severity = 10)
+                            let crimeScore = Math.min((rateNum / 500) * 10, 10);
+                            
+                            // New Weightage: 60% Socioeconomic Risk, 40% Actual Crime Volume
+                            let combinedRisk = (totalRisk * 0.6) + (crimeScore * 0.4);
+                            let combinedColor = combinedRisk >= 7 ? 'text-red-600' : (combinedRisk >= 4 ? 'text-orange-500' : 'text-green-600');
+
+                            // Generate Combined Index HTML for the tooltip/list
+                            combinedRiskHtml = `
+                                <div class="mt-2 pt-1.5 border-t border-gray-200">
+                                    <div class="text-xs text-gray-600 flex justify-between items-center bg-gray-50 -mx-1 px-1 py-1.5 rounded shadow-inner">
+                                        <span class="font-bold uppercase tracking-wide text-[10px] text-gray-500">Combined Index:</span>
+                                        <span class="font-extrabold ${combinedColor} ml-3 text-[13px]">${combinedRisk.toFixed(1)} / 10</span>
+                                    </div>
+                                </div>
+                            `;
+
+                            // Theme for Combined Risk Analysis Banner
+                            let riskTheme = { bg: 'bg-green-50', border: 'border-green-100', text: 'text-green-800', icon: 'text-green-600', label: 'Safe Zone' };
+                            if (combinedRisk >= 7) {
+                                riskTheme = { bg: 'bg-red-50', border: 'border-red-100', text: 'text-red-800', icon: 'text-red-600', label: 'High Alert' };
+                            } else if (combinedRisk >= 4) {
+                                riskTheme = { bg: 'bg-orange-50', border: 'border-orange-100', text: 'text-orange-800', icon: 'text-orange-600', label: 'Moderate' };
+                            }
+                            
+                            let narrative = `<span class="opacity-80 text-[9px] block mb-2 mt-0.5">(60% Socioeconomic Strain + 40% Crime Volume)</span>`;
+                            
+                            if (totalRisk >= 6 && crimeScore >= 5) {
+                                narrative += `This area faces compounding risks. High economic strain (driven heavily by <strong>${topDriver}</strong>) correlates directly with the high crime rates. Financial desperation is likely driving local crime.`;
+                            } else if (totalRisk >= 6 && crimeScore < 5) {
+                                narrative += `A highly resilient community! Despite elevated economic strain from <strong>${topDriver}</strong>, the crime rate remains remarkably low. Points to strong local community bonds or highly effective policing.`;
+                            } else if (totalRisk < 6 && crimeScore >= 5) {
+                                narrative += `A classic "Target Zone". The local economy is relatively stable, yet crime volume is disproportionately high. Wealthier or commercial hubs here are likely attracting property theft from outsiders.`;
+                            } else {
+                                narrative += `A generally stable region. Manageable economic conditions safely correlate with the controlled, lower crime rates observed here.`;
+                            }
+
+                            interpretationHtml = `
+                                <div class="mt-6 pt-5 border-t border-gray-200">
+                                    <div class="mb-2 p-3 ${riskTheme.bg} rounded-xl border ${riskTheme.border} shadow-sm">
+                                        <div class="flex items-center justify-between mb-1.5">
+                                            <div class="flex items-center gap-1.5">
+                                                <!-- Shield Icon -->
+                                                <svg class="${riskTheme.icon}" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                                <span class="text-[11px] font-bold ${riskTheme.text} uppercase tracking-wider">Overall Area Risk</span>
+                                            </div>
+                                            <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-white/60 ${riskTheme.text} shadow-sm">${riskTheme.label}</span>
+                                        </div>
+                                        <p class="text-[11px] ${riskTheme.text} leading-relaxed">
+                                            ${narrative}
+                                        </p>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            // Missing or Zero Crime Data
+                            combinedRiskHtml = `
+                                <div class="mt-2 pt-1.5 border-t border-gray-200">
+                                    <div class="text-xs text-gray-600 flex justify-between items-center bg-gray-50 -mx-1 px-1 py-1.5 rounded shadow-inner">
+                                        <span class="font-bold uppercase tracking-wide text-[10px] text-gray-500">Combined Index:</span>
+                                        <span class="font-bold text-gray-400 ml-3 text-[13px]">N/A</span>
+                                    </div>
+                                </div>
+                            `;
+                            interpretationHtml = ''; 
+                        }
                     }
 
                     let typesHtml = '';
@@ -1147,6 +1268,7 @@
                         ${inequalityHtml}
                         ${riskHtml}
                         ${typesHtml}
+                        ${combinedRiskHtml}
                     `;
 
                     const tooltipContent = `
@@ -1190,7 +1312,7 @@
 
                             // Populate Right Info Panel
                             document.getElementById('infoPanelTitle').textContent = name;
-                            document.getElementById('infoPanelContent').innerHTML = innerHtml;
+                            document.getElementById('infoPanelContent').innerHTML = innerHtml + interpretationHtml;
                             document.getElementById('infoPanel').classList.remove('hidden');
 
                             // Manage visual selection states
@@ -1214,7 +1336,7 @@
             
             if (currentLayer === 'risk') {
                 container.classList.remove('hidden');
-                let html = '<h4 class="font-bold text-xs uppercase tracking-wider text-gray-500 mb-3 border-b pb-1">Risk Map</h4><div class="space-y-1.5 text-xs text-gray-700">';
+                let html = '<h4 class="font-bold text-xs uppercase tracking-wider text-gray-500 mb-3 border-b pb-1">Overall Area Risk</h4><div class="space-y-1.5 text-xs text-gray-700">';
                 
                 const bands = [
                     { label: '8 - 10 (Very High)', color: '#991b1b' },

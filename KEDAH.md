@@ -52,12 +52,12 @@ When the user clicks **Fetch Live API Data**, the app:
 
 ## Control panel layout
 
-1. **Header** — Crime Map Kedah branding + CSV download button
-2. **Amenities** — Police station checkboxes (HQ, Balai Polis, Pondok Polis, Trafik, Specialist, Komuniti) + coverage radius slider (0–20 km, default 0 km)
-3. **Fetch Live API Data** button — loads crime dataset above Map Filters
-4. **Map Filters** (collapsible, default collapsed) — Crime/Risk layer, Year slider, Category, Type
-5. **Yearly Trend** — line chart of filtered reported crimes by year
-6. **Did You Know?** — floating panel at bottom-left, click to refresh fact
+1. **Header** â€” Crime Map Kedah branding + CSV download button
+2. **Amenities** â€” Police station checkboxes (HQ, Balai Polis, Pondok Polis, Trafik, Specialist, Komuniti) + coverage radius slider (0â€“20 km, default 0 km)
+3. **Fetch Live API Data** button â€” loads crime dataset above Map Filters
+4. **Map Filters** (collapsible, default collapsed) â€” Crime/Risk layer, Year slider, Category, Type
+5. **Yearly Trend** â€” line chart of filtered reported crimes by year
+6. **Did You Know?** â€” floating panel at bottom-left, click to refresh fact
 
 ## How to use the page
 
@@ -75,7 +75,7 @@ When the user clicks **Fetch Live API Data**, the app:
 
 ### Auto-load behavior
 
-Police stations load automatically on page init — no button click needed. The GeoJSON data is embedded inline in `kedah.html` (no external fetch, avoids CORS issues with `file://` protocol).
+Police stations load automatically on page init â€” no button click needed. The GeoJSON data is embedded inline in `kedah.html` (no external fetch, avoids CORS issues with `file://` protocol).
 
 ### Station type checkboxes
 
@@ -92,7 +92,7 @@ Pondok Polis is unchecked by default to reduce visual clutter (11 pondok station
 
 ### Coverage radius slider
 
-- Range: 0–20 km
+- Range: 0â€“20 km
 - Default: 0 km (no circles shown)
 - Circles use dashed border with 8% fill opacity, matching station type color
 - Useful for identifying coverage gaps between stations
@@ -114,12 +114,12 @@ Balai polis locations are sourced from **OpenStreetMap** via the Overpass API:
 4. **Initial result**: 62 features from OSM (nodes with exact coordinates + ways resolved to center points).
 5. **Manual additions**: 16 stations added manually for districts with incomplete OSM coverage (notably Langkawi: 1?8, missing IPDs, missing BP Sungai Petani, etc.).
 6. **Classification**: Each station is categorized by its name:
-   - `headquarters` — Ibu Pejabat, Kontinjen, Batalion
-   - `balai` — Balai Polis (full station)
-   - `pondok` — Pondok Polis (mini station)
-   - `traffic` — Trafik / Traffic Police
-   - `specialist` — Bahagian Siasatan, Pencegahan Jenayah, etc.
-   - `komuniti` — Balai Polis Komuniti
+   - `headquarters` â€” Ibu Pejabat, Kontinjen, Batalion
+   - `balai` â€” Balai Polis (full station)
+   - `pondok` â€” Pondok Polis (mini station)
+   - `traffic` â€” Trafik / Traffic Police
+   - `specialist` â€” Bahagian Siasatan, Pencegahan Jenayah, etc.
+   - `komuniti` â€” Balai Polis Komuniti
 7. **District assignment**: Each station is assigned to one of Kedah's 12 districts by nearest-centroid distance matching against district center coordinates.
 8. **Output files**: `kedah_police_stations.geojson` (standalone) + inline `POLICE_STATIONS_GEOJSON` constant in `kedah.html`.
 9. **Sync**: Both files contain the same 78 features. The inline version is the authoritative source for the app (avoids CORS). The standalone file is kept for reuse.
@@ -190,7 +190,7 @@ When crime data is loaded and a district has crime count > 0, the crime heatmap 
 
 The following use cases are planned or proposed to evolve `kedah.html` from a retrospective analytics dashboard into an **operational tool** for law enforcement and public safety planning.
 
-### 1. Balai Polis Layer — Police Station Locations ? IMPLEMENTED
+### 1. Balai Polis Layer â€” Police Station Locations ? IMPLEMENTED
 
 This use case is now fully implemented. See the **Police station amenities** section above for details.
 
@@ -199,7 +199,7 @@ Remaining improvements:
 - Add phone numbers and operating hours from official sources
 - Real-time station status (open/closed/busy)
 
-### 2. Daily Crime Feed — Real-Time Incident Updates
+### 2. Daily Crime Feed â€” Real-Time Incident Updates
 
 Replace the current annual/batch crime data with a **daily-updated crime incident feed**.
 
@@ -214,7 +214,7 @@ Replace the current annual/batch crime data with a **daily-updated crime inciden
   - Badge count on the "Fetch" button showing number of new incidents since last load
   - Incident markers (clustered) with type, time, and status icons
 
-### 3. Daily Heatmap Hotspot — Dynamic Crime Density
+### 3. Daily Heatmap Hotspot â€” Dynamic Crime Density
 
 Upgrade the static choropleth to a **daily-updated kernel density heatmap** that highlights micro-level crime hotspots.
 
@@ -229,7 +229,7 @@ Upgrade the static choropleth to a **daily-updated kernel density heatmap** that
   - Hotspot intensity legend with dynamic thresholds
   - Animated pulse effect on emerging hotspots (new in last 3 hours)
 
-### 4. MPV Patrol Routing — Focused Deployment
+### 4. MPV Patrol Routing â€” Focused Deployment
 
 Generate **suggested patrol routes** for Mobile Patrol Vehicle (MPV) units based on today's heatmap hotspots.
 
@@ -237,7 +237,7 @@ Generate **suggested patrol routes** for Mobile Patrol Vehicle (MPV) units based
 - **Benefits**:
   - Direct crime data ? patrol action pipeline
   - Reduce response time by pre-positioning MPVs near predicted hotspots
-  - Equalize patrol coverage across shifts — no district left uncovered
+  - Equalize patrol coverage across shifts â€” no district left uncovered
   - Measure patrol effectiveness over time (crime reduction in patrolled zones)
 - **Implementation notes**:
   - Shortest-path routing via OSRM or GraphHopper API
@@ -245,7 +245,7 @@ Generate **suggested patrol routes** for Mobile Patrol Vehicle (MPV) units based
   - Route card UI: shift time, zone, estimated patrol duration, key risk points
   - Daily route summary exportable as PDF for shift handover
 
-### 5. Crime Forecasting — Predictive Hotspot Modeling
+### 5. Crime Forecasting â€” Predictive Hotspot Modeling
 
 Apply time-series and spatial models to **predict** where crime is likely to increase next.
 
@@ -260,7 +260,7 @@ Apply time-series and spatial models to **predict** where crime is likely to inc
   - Toggle between "Actual" and "Forecast" map modes
   - Alert notifications when a district's predicted count exceeds a configurable threshold
 
-### 6. Public Safety Dashboard — Community Transparency
+### 6. Public Safety Dashboard â€” Community Transparency
 
 A public-facing view of the Kedah crime map that shows **anonymized, aggregated** data for community awareness.
 
@@ -268,14 +268,14 @@ A public-facing view of the Kedah crime map that shows **anonymized, aggregated*
 - **Benefits**:
   - Build public trust through transparency
   - Empower residents to make informed safety decisions (e.g., avoid poorly lit areas at night)
-  - Encourage community policing — Rukun Tetangga zones can self-organize around known hotspots
+  - Encourage community policing â€” Rukun Tetangga zones can self-organize around known hotspots
 - **Implementation notes**:
   - Separate `public.html` with reduced data granularity (no exact addresses, no victim info)
   - Safety tips overlay per district
   - "Report Suspicious Activity" form linking to PDRM portal
   - Multi-language support (BM, English, ??, ?????)
 
-### 7. Emergency Response Integration — 999 Linkage
+### 7. Emergency Response Integration â€” 999 Linkage
 
 Connect the crime map to the **MERS 999** emergency response system for real-time incident dispatch visualization.
 
@@ -290,7 +290,7 @@ Connect the crime map to the **MERS 999** emergency response system for real-tim
   - Auto-zoom to active incident on selection
   - Response time benchmarking dashboard per district
 
-### 8. Inter-Agency Coordination — Multi-Layer Governance
+### 8. Inter-Agency Coordination â€” Multi-Layer Governance
 
 Enable **PDRM, APM, RELA, and JPBM** to share a common operational picture.
 
@@ -321,4 +321,4 @@ Enable **PDRM, APM, RELA, and JPBM** to share a common operational picture.
 
 ## Support
 
-If you are interested in collaborating to improve this heatmap for public-benefit use cases — especially the MPV patrol routing, daily crime feed, or emergency response integration — please get in touch.
+If you are interested in collaborating to improve this heatmap for public-benefit use cases â€” especially the MPV patrol routing, daily crime feed, or emergency response integration â€” please get in touch.

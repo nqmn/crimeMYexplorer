@@ -1,0 +1,1409 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3713452,
+          6.1206685
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Kota Setar",
+        "type": "headquarters",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3773833,
+          6.1862001
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Anak Bukit Bandar Mu'adzam Shah",
+        "type": "balai",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4342077,
+          6.1461214
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Langgar",
+        "type": "balai",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5187531,
+          6.1690624
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Pokok Sena",
+        "type": "balai",
+        "district": "Pokok Sena",
+        "operator": "",
+        "phone": "+6047822222",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3652531,
+          6.116671
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Alor Setar",
+        "type": "balai",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4826941,
+          6.0295212
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Tanah Merah",
+        "type": "pondok",
+        "district": "Pendang",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4799419,
+          6.2465894
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Wang Tepus",
+        "type": "pondok",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4209565,
+          6.2746631
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Jitra",
+        "type": "balai",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3723383,
+          6.1299466
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat PDRM Kontinjen Kedah.",
+        "type": "headquarters",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.2398285,
+          6.2455654
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Ayer Hitam",
+        "type": "balai",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.6733875,
+          5.8026075
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Bandar Baru Beris Jaya",
+        "type": "pondok",
+        "district": "Sik",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.399636,
+          5.9762507
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kota Sarang Semut",
+        "type": "balai",
+        "district": "Pendang",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5524371,
+          6.0838653
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kubur Panjang",
+        "type": "balai",
+        "district": "Pokok Sena",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5044606,
+          5.6677861
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Kuala Muda",
+        "type": "headquarters",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4292454,
+          6.427983
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Changloon",
+        "type": "balai",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "04-9241222",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5357063,
+          5.4345981
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Lunas",
+        "type": "balai",
+        "district": "Kulim",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4774781,
+          5.903872
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Bukit Jenun",
+        "type": "balai",
+        "district": "Pendang",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4729066,
+          5.9861843
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Pendang",
+        "type": "headquarters",
+        "district": "Pendang",
+        "operator": "Polis Diraja Malaysia",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4894698,
+          5.6465272
+        ]
+      },
+      "properties": {
+        "name": "PDRM Sungai Petani (Cawangan Trafik / Kereta Peronda)",
+        "type": "traffic",
+        "district": "Kuala Muda",
+        "operator": "PDRM",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.305454,
+          6.3938093
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kodiang",
+        "type": "balai",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3036607,
+          6.1726782
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Alor Janggus",
+        "type": "balai",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "+6047339009",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4578995,
+          5.8579159
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Guar Chempedak",
+        "type": "balai",
+        "district": "Yan",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5117078,
+          5.7346384
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Bedong",
+        "type": "balai",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5905011,
+          5.1422948
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Lubok Buntar",
+        "type": "pondok",
+        "district": "Bandar Baharu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5379954,
+          5.3558539
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Kulim",
+        "type": "headquarters",
+        "district": "Kulim",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3782356,
+          5.8998541
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Sungai Limau Dalam",
+        "type": "pondok",
+        "district": "Yan",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.7219667,
+          6.4448598
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kota Putra",
+        "type": "balai",
+        "district": "Padang Terap",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4772222,
+          5.8197733
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Gurun",
+        "type": "balai",
+        "district": "Yan",
+        "operator": "",
+        "phone": "+604-4686222",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4149137,
+          5.722398
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Merbok",
+        "type": "balai",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4280192,
+          5.9135093
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Sungai Limau",
+        "type": "pondok",
+        "district": "Pendang",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.6119313,
+          6.0343559
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Padang Durian",
+        "type": "pondok",
+        "district": "Pendang",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3741535,
+          5.5876534
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kota Kuala Muda",
+        "type": "balai",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4786803,
+          5.991547
+        ]
+      },
+      "properties": {
+        "name": "Bahagian Siasatan dan Penguatkuasaan Trafik Ibu Pejabat Polis Daerah Pendang",
+        "type": "traffic",
+        "district": "Pendang",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3648385,
+          6.1163206
+        ]
+      },
+      "properties": {
+        "name": "Bahagian Siasatan dan Penguatkuasaan Trafik IPD Kota Setar",
+        "type": "traffic",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "+60 4 732 12 22",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3650756,
+          6.1165261
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Trafik Kota Setar",
+        "type": "traffic",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.6526306,
+          5.6050033
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kuala Ketil",
+        "type": "balai",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4058025,
+          6.2028533
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kepala Batas",
+        "type": "balai",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "+60 4 714 42 22",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.7729202,
+          5.5963854
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Tawar",
+        "type": "balai",
+        "district": "Baling",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.6140807,
+          5.5194588
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Sungai Karangan",
+        "type": "balai",
+        "district": "Kulim",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.91509,
+          5.6753766
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Baling",
+        "type": "balai",
+        "district": "Baling",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5376999,
+          5.6987587
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Komuniti",
+        "type": "komuniti",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3688011,
+          6.1559127
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Alor Merah",
+        "type": "pondok",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5497685,
+          5.5135125
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Padang Serai",
+        "type": "balai",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3686567,
+          5.7267908
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Singkir",
+        "type": "pondok",
+        "district": "Yan",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.532405,
+          5.612167
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Bandar Puteri Jaya",
+        "type": "pondok",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4406998,
+          5.5864759
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Tikam Batu",
+        "type": "balai",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3658887,
+          6.1156877
+        ]
+      },
+      "properties": {
+        "name": "Bahagian Pencegahan Jenayah dan Keselamatan Komuniti IPD Kota Setar",
+        "type": "specialist",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.6928781,
+          6.2292328
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kampung Tanjung",
+        "type": "balai",
+        "district": "Padang Terap",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.6091361,
+          5.1982953
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Bandar Baharu",
+        "type": "headquarters",
+        "district": "Bandar Baharu",
+        "operator": "Polis Diraja Malaysia",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.556948,
+          5.3698479
+        ]
+      },
+      "properties": {
+        "name": "Kulim Traffic Police Station",
+        "type": "traffic",
+        "district": "Kulim",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5358753,
+          5.3019516
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Junjong",
+        "type": "balai",
+        "district": "Kulim",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5406565,
+          5.333904
+        ]
+      },
+      "properties": {
+        "name": "Batalion 2 PGA Kulim Kedah",
+        "type": "headquarters",
+        "district": "Kulim",
+        "operator": "Polis Diraja Malaysia",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.320015,
+          6.2366903
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Sungai Korok",
+        "type": "pondok",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4946717,
+          5.1309805
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Bandar Baharu",
+        "type": "balai",
+        "district": "Bandar Baharu",
+        "operator": "Polis Diraja Malaysia",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.8136652,
+          6.0251404
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Gulau",
+        "type": "pondok",
+        "district": "Sik",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5165911,
+          5.6986847
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Sungai Lalang",
+        "type": "pondok",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.6329549,
+          5.8127616
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Jeniang",
+        "type": "balai",
+        "district": "Sik",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          99.8485605,
+          6.326474
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Langkawi",
+        "type": "headquarters",
+        "district": "Langkawi",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          99.845,
+          6.325
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kuah",
+        "type": "balai",
+        "district": "Langkawi",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          99.7132017,
+          6.3619463
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kuala Terang",
+        "type": "balai",
+        "district": "Langkawi",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          99.735,
+          6.333
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Padang Matsirat",
+        "type": "balai",
+        "district": "Langkawi",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          99.765,
+          6.285
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kedawang",
+        "type": "balai",
+        "district": "Langkawi",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          99.725,
+          6.295
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Pantai Chenang",
+        "type": "pondok",
+        "district": "Langkawi",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          99.715,
+          6.278
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Pantai Tengah",
+        "type": "pondok",
+        "district": "Langkawi",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          99.68,
+          6.375
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Datai Bay",
+        "type": "pondok",
+        "district": "Langkawi",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.48909,
+          5.64116
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Sungai Petani",
+        "type": "balai",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.49092,
+          5.64094
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis UTC Sungai Petani",
+        "type": "pondok",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.48333,
+          5.6123
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Taman Sejati Indah",
+        "type": "pondok",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.60673,
+          6.25253
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Padang Terap",
+        "type": "headquarters",
+        "district": "Padang Terap",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.74721,
+          5.83766
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Sik",
+        "type": "headquarters",
+        "district": "Sik",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.21751,
+          6.28063
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Sanglang",
+        "type": "balai",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.42251,
+          6.23699
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Komuniti Bandar Darulaman",
+        "type": "komuniti",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.31007,
+          6.4868
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Kok Klang",
+        "type": "pondok",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.36338,
+          5.6823
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Tanjung Dawai",
+        "type": "balai",
+        "district": "Yan",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.38188,
+          6.02323
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Simpang Empat",
+        "type": "balai",
+        "district": "Pendang",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.57365,
+          5.59906
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Sidam Kiri",
+        "type": "balai",
+        "district": "Bandar Baharu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.92,
+          5.68
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Baling",
+        "type": "headquarters",
+        "district": "Baling",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.425,
+          6.27
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Kubang Pasu",
+        "type": "headquarters",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    }
+  ]
+}

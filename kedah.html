@@ -1,0 +1,3218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kedah Crime Data Visualization</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+        #map { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 0; background: #e5e7eb; }
+        
+        /* Custom scrollbar for control panel */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .legend-color-box {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            border-radius: 3px;
+            vertical-align: middle;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="font-sans text-gray-800">
+
+    <!-- Map Container -->
+    <div id="map"></div>
+    
+    <!-- UI Overlay: Control Panel (Left) -->
+    <div class="absolute top-4 left-4 sm:top-6 sm:left-6 z-[1000] w-[90%] sm:w-80 max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-2xl border border-gray-100">
+        <div class="flex items-center justify-between mb-5 gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-red-500 p-2 rounded-lg text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <h2 class="text-xl font-extrabold text-gray-900 tracking-tight">Crime Map <span class="font-light text-gray-500">Kedah</span></h2>
+            </div>
+            
+            <!-- Save Button -->
+            <button id="downloadCsvBtn" class="text-gray-500 hover:text-red-600 transition-colors p-2 bg-gray-100 hover:bg-red-50 rounded-lg shadow-sm border border-gray-200" title="Save consolidated dataset as CSV">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            </button>
+        </div>
+        
+
+                        <!-- 2. Amenities -->
+        <div class="mb-5">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">2. Amenities</label>
+
+            <!-- Station Type Checkboxes -->
+            <div class="space-y-2">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Police Stations</label>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                        <input type="checkbox" class="amenity-check accent-blue-800 w-3.5 h-3.5 rounded" data-type="headquarters" checked>
+                        <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:#1e3a8a"></span> HQ
+                    </label>
+                    <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                        <input type="checkbox" class="amenity-check accent-red-600 w-3.5 h-3.5 rounded" data-type="balai" checked>
+                        <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:#dc2626"></span> Balai Polis
+                    </label>
+                    <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                        <input type="checkbox" class="amenity-check accent-amber-500 w-3.5 h-3.5 rounded" data-type="pondok">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:#f59e0b"></span> Pondok Polis
+                    </label>
+                    <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                        <input type="checkbox" class="amenity-check accent-blue-600 w-3.5 h-3.5 rounded" data-type="traffic" checked>
+                        <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:#2563eb"></span> Trafik
+                    </label>
+                    <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                        <input type="checkbox" class="amenity-check accent-purple-600 w-3.5 h-3.5 rounded" data-type="specialist" checked>
+                        <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:#7c3aed"></span> Specialist
+                    </label>
+                    <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                        <input type="checkbox" class="amenity-check accent-emerald-600 w-3.5 h-3.5 rounded" data-type="komuniti" checked>
+                        <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:#059669"></span> Komuniti
+                    </label>
+                </div>
+                <span id="stationCount" class="text-[10px] text-gray-400">0 stations shown</span>
+            </div>
+
+            <!-- Coverage Radius Slider -->
+            <div class="mt-3">
+                <div class="flex justify-between items-center mb-1">
+                    <label class="block text-xs font-medium text-gray-700">Coverage Radius</label>
+                    <span id="coverageDisplay" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded shadow-sm border border-blue-100">0 km</span>
+                </div>
+                <input type="range" id="coverageSlider" min="0" max="20" value="0" step="1"
+                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                <div class="flex justify-between text-[10px] text-gray-400 mt-1 px-1 font-medium">
+                    <span>0 km</span>
+                    <span>20 km</span>
+                </div>
+            
+            <!-- MPV Patrol Routes -->
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-medium text-gray-700">MPV Patrol Routes</label>
+                    <button id="generatePatrolBtn" class="text-[10px] bg-green-600 hover:bg-green-700 text-white px-2 py-0.5 rounded shadow-sm transition-colors font-semibold">Generate</button>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-gray-700 mb-1">
+                    <label>MPVs:</label>
+                    <select id="mpvCount" class="rounded border-gray-200 bg-gray-50 text-xs p-1 outline-none">
+                        <option value="2">2</option>
+                        <option value="3" selected>3</option>
+                        <option value="5">5</option>
+                        <option value="8">8</option>
+                    </select>
+                    <button id="clearPatrolBtn" class="text-[10px] text-gray-400 hover:text-red-500 transition-colors ml-auto" title="Clear routes">Clear</button>
+                </div>
+                <div id="patrolSummary" class="text-[10px] text-gray-500 space-y-0.5 hidden"></div>
+            </div>
+</div>
+        </div>
+
+<!-- Filters (collapsible, default collapsed) -->
+        <div>            <button id="fetchApiBtn" class="w-full mb-3 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-xl shadow-sm transition-colors text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                Fetch Live API Data
+            </button>
+
+
+            <button id="filtersToggle" class="w-full flex items-center justify-between text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 hover:text-gray-800 transition-colors">
+                <span>3. Map Filters</span>
+                <svg id="filtersChevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="transition-transform"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="filtersContent" class="space-y-4 hidden">
+
+            <!-- Map Layer Toggle -->
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Map Layer</label>
+                <div class="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+                    <button id="layerCrimeBtn" disabled class="flex-1 text-xs font-bold py-1.5 rounded-md bg-white shadow-sm text-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">Crime Map</button>
+                    <button id="layerRiskBtn" disabled class="flex-1 text-xs font-bold py-1.5 rounded-md text-gray-500 hover:text-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:disabled:text-gray-500">Risk Map</button>
+                </div>
+            </div>
+
+            <!-- View Level Toggle -->
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">View Level</label>
+                <div class="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+                    <button id="levelStateBtn" disabled class="flex-1 text-xs font-bold py-1.5 rounded-md text-gray-500 hover:text-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:disabled:text-gray-500">States</button>
+                    <button id="levelDistrictBtn" disabled class="flex-1 text-xs font-bold py-1.5 rounded-md bg-white shadow-sm text-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">Districts</button>
+                </div>
+            </div>
+            
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <label class="block text-xs font-medium text-gray-700">Year</label>
+                    <span id="yearDisplay" class="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded shadow-sm border border-red-100">Waiting...</span>
+                </div>
+                <input type="range" id="yearSlider" min="0" max="0" value="0" disabled
+                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-500 disabled:opacity-50">
+                <div class="flex justify-between text-[10px] text-gray-400 mt-1 px-1 font-medium" id="yearTicks">
+                    <span>-</span>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Crime Category</label>
+                <select id="categoryFilter" class="w-full rounded-lg border-gray-200 bg-gray-50 shadow-inner focus:border-red-500 focus:ring-red-500 text-sm p-2.5 outline-none transition cursor-pointer disabled:opacity-50">
+                    <option value="All">Waiting for data...</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Crime Type</label>
+                <select id="typeFilter" class="w-full rounded-lg border-gray-200 bg-gray-50 shadow-inner focus:border-red-500 focus:ring-red-500 text-sm p-2.5 outline-none transition cursor-pointer disabled:opacity-50">
+                    <option value="All">Waiting for data...</option>
+                </select>
+            </div>
+            </div>
+        </div>
+
+
+                    <!-- Yearly Trend Chart Container -->
+        <div id="chartContainer" class="mt-6 hidden">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">4. Yearly Trend</label>
+            <div class="p-3 bg-gray-50 border border-gray-200 rounded-xl shadow-inner relative h-40 w-full">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+
+
+    
+</div>        <!-- Floating Did You Know Panel (below left panel) -->
+    <div id="factBanner" class="absolute bottom-6 left-4 sm:bottom-6 sm:left-6 z-[1000] w-[90%] sm:w-80 bg-yellow-50/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-yellow-200 hidden cursor-pointer hover:bg-yellow-100 transition-colors group overflow-hidden">
+        <div class="absolute -right-4 -top-4 text-yellow-200 opacity-50 group-hover:rotate-12 transition-transform">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9v1Z"/></svg>
+        </div>
+        <div class="relative z-10">
+            <div class="flex items-center justify-between mb-1.5">
+                <div class="flex items-center gap-2">
+                    <svg class="text-yellow-600" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.9 1.2 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+                    <span class="text-xs font-bold text-yellow-800 uppercase tracking-wider">Did you know?</span>
+                </div>
+                <button id="closeFactBanner" class="text-yellow-400 hover:text-yellow-700 transition-colors p-1 rounded" title="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <p id="factText" class="text-[13px] text-yellow-900 leading-snug"></p>
+            <div class="mt-2 text-[10px] text-yellow-600/80 font-medium flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                Click to refresh fact
+            </div>
+        </div>
+    </div>
+
+<!-- UI Overlay: Right Info Panel (Hidden by default) -->
+    <div id="infoPanel" class="absolute top-4 right-4 sm:top-6 sm:right-6 z-[1001] w-[90%] sm:w-[340px] max-h-[85vh] overflow-y-auto bg-white/80 backdrop-blur-md p-5 rounded-2xl shadow-2xl border border-gray-100 hidden transition-all flex flex-col">
+        <div class="flex items-center justify-between mb-4 border-b border-gray-200 pb-3 shrink-0">
+            <h2 id="infoPanelTitle" class="text-xl font-extrabold text-gray-900 tracking-tight uppercase truncate pr-2"></h2>
+            <button id="closeInfoPanel" class="text-gray-400 hover:text-red-500 transition-colors p-1.5 bg-gray-100 hover:bg-red-50 rounded-lg shadow-sm" title="Close Panel">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div id="infoPanelContent" class="space-y-1 overflow-y-auto grow pr-1">
+            <!-- Dynamic Content Injected Here -->
+        </div>
+    </div>
+
+    <!-- UI Overlay: Legend -->
+    <div id="legendContainer" class="absolute bottom-6 right-6 z-[1000] bg-white/95 backdrop-blur-md p-4 rounded-xl shadow-xl border border-gray-100 hidden">
+        <!-- Legend populated by JS -->
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-5 py-3 rounded-lg shadow-2xl hidden z-[2000] text-sm font-medium transition-all opacity-0 flex items-center gap-2">
+        <span id="toastMsg">Notification message</span>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script> <!-- Turf.js for GeoSpatial Math -->
+
+    <script>
+        // --- State Management ---
+        let rawData = [];
+        let stateGeojson = null;
+        let districtGeojson = null;
+        let map = null;
+        let geojsonLayer = null;
+        let availableYears = ['All'];
+        let trendChart = null; // Chart instance
+        let currentLayer = 'crime'; // Toggle state: 'crime' | 'risk'
+        let selectedLayer = null; // Track clicked map layer
+        let isFeatureClicked = false; // Prevent map click hiding panel instantly
+
+        // Police Station Layer
+        const POLICE_STATIONS_GEOJSON = {
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3713452,
+          6.1206685
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Kota Setar",
+        "type": "headquarters",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3773833,
+          6.1862001
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Anak Bukit Bandar Mu'adzam Shah",
+        "type": "balai",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4342077,
+          6.1461214
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Langgar",
+        "type": "balai",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5187531,
+          6.1690624
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Pokok Sena",
+        "type": "balai",
+        "district": "Pokok Sena",
+        "operator": "",
+        "phone": "+6047822222",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3652531,
+          6.116671
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Alor Setar",
+        "type": "balai",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4826941,
+          6.0295212
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Tanah Merah",
+        "type": "pondok",
+        "district": "Pendang",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4799419,
+          6.2465894
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Wang Tepus",
+        "type": "pondok",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4209565,
+          6.2746631
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Jitra",
+        "type": "balai",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3723383,
+          6.1299466
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat PDRM Kontinjen Kedah.",
+        "type": "headquarters",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.2398285,
+          6.2455654
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Ayer Hitam",
+        "type": "balai",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.6733875,
+          5.8026075
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Bandar Baru Beris Jaya",
+        "type": "pondok",
+        "district": "Sik",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.399636,
+          5.9762507
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kota Sarang Semut",
+        "type": "balai",
+        "district": "Pendang",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5524371,
+          6.0838653
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kubur Panjang",
+        "type": "balai",
+        "district": "Pokok Sena",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5044606,
+          5.6677861
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Kuala Muda",
+        "type": "headquarters",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4292454,
+          6.427983
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Changloon",
+        "type": "balai",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "04-9241222",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5357063,
+          5.4345981
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Lunas",
+        "type": "balai",
+        "district": "Kulim",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4774781,
+          5.903872
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Bukit Jenun",
+        "type": "balai",
+        "district": "Pendang",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4729066,
+          5.9861843
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Pendang",
+        "type": "headquarters",
+        "district": "Pendang",
+        "operator": "Polis Diraja Malaysia",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4894698,
+          5.6465272
+        ]
+      },
+      "properties": {
+        "name": "PDRM Sungai Petani (Cawangan Trafik / Kereta Peronda)",
+        "type": "traffic",
+        "district": "Kuala Muda",
+        "operator": "PDRM",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.305454,
+          6.3938093
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kodiang",
+        "type": "balai",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3036607,
+          6.1726782
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Alor Janggus",
+        "type": "balai",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "+6047339009",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4578995,
+          5.8579159
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Guar Chempedak",
+        "type": "balai",
+        "district": "Yan",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5117078,
+          5.7346384
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Bedong",
+        "type": "balai",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5905011,
+          5.1422948
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Lubok Buntar",
+        "type": "pondok",
+        "district": "Bandar Baharu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5379954,
+          5.3558539
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Kulim",
+        "type": "headquarters",
+        "district": "Kulim",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3782356,
+          5.8998541
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Sungai Limau Dalam",
+        "type": "pondok",
+        "district": "Yan",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.7219667,
+          6.4448598
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kota Putra",
+        "type": "balai",
+        "district": "Padang Terap",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4772222,
+          5.8197733
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Gurun",
+        "type": "balai",
+        "district": "Yan",
+        "operator": "",
+        "phone": "+604-4686222",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4149137,
+          5.722398
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Merbok",
+        "type": "balai",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4280192,
+          5.9135093
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Sungai Limau",
+        "type": "pondok",
+        "district": "Pendang",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.6119313,
+          6.0343559
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Padang Durian",
+        "type": "pondok",
+        "district": "Pendang",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3741535,
+          5.5876534
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kota Kuala Muda",
+        "type": "balai",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4786803,
+          5.991547
+        ]
+      },
+      "properties": {
+        "name": "Bahagian Siasatan dan Penguatkuasaan Trafik Ibu Pejabat Polis Daerah Pendang",
+        "type": "traffic",
+        "district": "Pendang",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3648385,
+          6.1163206
+        ]
+      },
+      "properties": {
+        "name": "Bahagian Siasatan dan Penguatkuasaan Trafik IPD Kota Setar",
+        "type": "traffic",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "+60 4 732 12 22",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3650756,
+          6.1165261
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Trafik Kota Setar",
+        "type": "traffic",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.6526306,
+          5.6050033
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kuala Ketil",
+        "type": "balai",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4058025,
+          6.2028533
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kepala Batas",
+        "type": "balai",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "+60 4 714 42 22",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.7729202,
+          5.5963854
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Tawar",
+        "type": "balai",
+        "district": "Baling",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.6140807,
+          5.5194588
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Sungai Karangan",
+        "type": "balai",
+        "district": "Kulim",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.91509,
+          5.6753766
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Baling",
+        "type": "balai",
+        "district": "Baling",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5376999,
+          5.6987587
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Komuniti",
+        "type": "komuniti",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3688011,
+          6.1559127
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Alor Merah",
+        "type": "pondok",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5497685,
+          5.5135125
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Padang Serai",
+        "type": "balai",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3686567,
+          5.7267908
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Singkir",
+        "type": "pondok",
+        "district": "Yan",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.532405,
+          5.612167
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Bandar Puteri Jaya",
+        "type": "pondok",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4406998,
+          5.5864759
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Tikam Batu",
+        "type": "balai",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3658887,
+          6.1156877
+        ]
+      },
+      "properties": {
+        "name": "Bahagian Pencegahan Jenayah dan Keselamatan Komuniti IPD Kota Setar",
+        "type": "specialist",
+        "district": "Kota Setar",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.6928781,
+          6.2292328
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kampung Tanjung",
+        "type": "balai",
+        "district": "Padang Terap",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.6091361,
+          5.1982953
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Bandar Baharu",
+        "type": "headquarters",
+        "district": "Bandar Baharu",
+        "operator": "Polis Diraja Malaysia",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.556948,
+          5.3698479
+        ]
+      },
+      "properties": {
+        "name": "Kulim Traffic Police Station",
+        "type": "traffic",
+        "district": "Kulim",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5358753,
+          5.3019516
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Junjong",
+        "type": "balai",
+        "district": "Kulim",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5406565,
+          5.333904
+        ]
+      },
+      "properties": {
+        "name": "Batalion 2 PGA Kulim Kedah",
+        "type": "headquarters",
+        "district": "Kulim",
+        "operator": "Polis Diraja Malaysia",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.320015,
+          6.2366903
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Sungai Korok",
+        "type": "pondok",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4946717,
+          5.1309805
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Bandar Baharu",
+        "type": "balai",
+        "district": "Bandar Baharu",
+        "operator": "Polis Diraja Malaysia",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.8136652,
+          6.0251404
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Gulau",
+        "type": "pondok",
+        "district": "Sik",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5165911,
+          5.6986847
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Sungai Lalang",
+        "type": "pondok",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.6329549,
+          5.8127616
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Jeniang",
+        "type": "balai",
+        "district": "Sik",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          99.8485605,
+          6.326474
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Langkawi",
+        "type": "headquarters",
+        "district": "Langkawi",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          99.845,
+          6.325
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kuah",
+        "type": "balai",
+        "district": "Langkawi",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          99.7132017,
+          6.3619463
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kuala Terang",
+        "type": "balai",
+        "district": "Langkawi",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          99.735,
+          6.333
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Padang Matsirat",
+        "type": "balai",
+        "district": "Langkawi",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          99.765,
+          6.285
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Kedawang",
+        "type": "balai",
+        "district": "Langkawi",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          99.725,
+          6.295
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Pantai Chenang",
+        "type": "pondok",
+        "district": "Langkawi",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          99.715,
+          6.278
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Pantai Tengah",
+        "type": "pondok",
+        "district": "Langkawi",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          99.68,
+          6.375
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Datai Bay",
+        "type": "pondok",
+        "district": "Langkawi",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.48909,
+          5.64116
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Sungai Petani",
+        "type": "balai",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.49092,
+          5.64094
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis UTC Sungai Petani",
+        "type": "pondok",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.48333,
+          5.6123
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Taman Sejati Indah",
+        "type": "pondok",
+        "district": "Kuala Muda",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.60673,
+          6.25253
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Padang Terap",
+        "type": "headquarters",
+        "district": "Padang Terap",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.74721,
+          5.83766
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Sik",
+        "type": "headquarters",
+        "district": "Sik",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.21751,
+          6.28063
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Sanglang",
+        "type": "balai",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.42251,
+          6.23699
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Komuniti Bandar Darulaman",
+        "type": "komuniti",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.31007,
+          6.4868
+        ]
+      },
+      "properties": {
+        "name": "Pondok Polis Kok Klang",
+        "type": "pondok",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.36338,
+          5.6823
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Tanjung Dawai",
+        "type": "balai",
+        "district": "Yan",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.38188,
+          6.02323
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Simpang Empat",
+        "type": "balai",
+        "district": "Pendang",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.57365,
+          5.59906
+        ]
+      },
+      "properties": {
+        "name": "Balai Polis Sidam Kiri",
+        "type": "balai",
+        "district": "Bandar Baharu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.92,
+          5.68
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Baling",
+        "type": "headquarters",
+        "district": "Baling",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.425,
+          6.27
+        ]
+      },
+      "properties": {
+        "name": "Ibu Pejabat Polis Daerah Kubang Pasu",
+        "type": "headquarters",
+        "district": "Kubang Pasu",
+        "operator": "",
+        "phone": "",
+        "opening_hours": ""
+      }
+    }
+  ]
+};
+
+
+
+                let districtColors = {
+            'kotasetar': '#fde8e8',
+            'kubangpasu': '#e8f0fe',
+            'padangterap': '#fef3e2',
+            'sik': '#e8f5e9',
+            'baling': '#fce4ec',
+            'kulim': '#e8eaf6',
+            'bandarbaharu': '#fff8e1',
+            'pendang': '#f3e5f5',
+            'yan': '#e0f2f1',
+            'kualamuda': '#ffebee',
+            'pokoksena': '#e1f5fe',
+            'langkawi': '#fff3e0'
+        };
+
+        let policeLayerGroup = null;
+        let coverageLayerGroup = null;
+        let visibleTypes = new Set(["headquarters", "balai", "traffic", "specialist", "komuniti"]);
+        let coverageRadius = 0; // km
+        let policeData = null;
+        
+        // Store API Population Data
+        let popLookup = { state: {}, district: {} };
+        let incomeLookup = { state: {}, district: {} }; 
+        let povertyLookup = { state: {}, district: {} }; 
+        let inequalityLookup = { state: {}, district: {} }; 
+        let unemploymentLookup = { state: {}, district: {} }; 
+        let geoAreaCache = { state: {}, district: {} }; 
+
+        let filters = {
+            level: 'district', // Default to district for Kedah-focused view
+            year: 'All',
+            category: 'All',
+            type: 'All'
+        };
+
+        // --- Initialization ---
+        async function init() {
+            // Initialize Leaflet Map
+            map = L.map('map', { zoomControl: false }).setView([6.12, 100.5], 9);
+            L.control.zoom({ position: 'topleft' }).addTo(map);
+
+            // Clean CartoDB Voyager Basemap
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            // Map Click Event - Closes Right Panel and Deselects Boundary
+            map.on('click', function() {
+                if (isFeatureClicked) return; // Ignore if feature was just clicked
+                
+                document.getElementById('infoPanel').classList.add('hidden');
+                if (selectedLayer && geojsonLayer) {
+                    geojsonLayer.resetStyle(selectedLayer);
+                    selectedLayer = null;
+                }
+            });
+
+            // Close Right Panel Button
+            document.getElementById('closeInfoPanel').addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('infoPanel').classList.add('hidden');
+                if (selectedLayer && geojsonLayer) {
+                    geojsonLayer.resetStyle(selectedLayer);
+                    selectedLayer = null;
+                }
+            });
+
+            showToast("Fetching administrative boundaries...");
+
+            // Fetch external GeoJSON polygons for Malaysia
+            try {
+                const [stateRes, distRes] = await Promise.all([
+                    fetch('https://raw.githubusercontent.com/nullifye/malaysia.geojson/master/malaysia.state.geojson'),
+                    fetch('https://raw.githubusercontent.com/nullifye/malaysia.geojson/master/malaysia.district.geojson')
+                ]);
+                
+                if (stateRes.ok) stateGeojson = await stateRes.json();
+                else showToast("Warning: Could not fetch State boundaries.");
+                
+                if (distRes.ok) districtGeojson = await distRes.json();
+                else showToast("Warning: Could not fetch District boundaries.");
+                
+                // Filter GeoJSON to Kedah only
+                const KEDAH_STATE_CODE = 'KDH';
+                if (stateGeojson && stateGeojson.features) {
+                    stateGeojson.features = stateGeojson.features.filter(f => f.properties.state === KEDAH_STATE_CODE);
+                }
+                if (districtGeojson && districtGeojson.features) {
+                    districtGeojson.features = districtGeojson.features.filter(f => f.properties.state === KEDAH_STATE_CODE);
+                }
+
+                // Pre-calculate areas via Turf.js
+                if (stateGeojson) calculateGeoAreas(stateGeojson, 'state');
+                if (districtGeojson) calculateGeoAreas(districtGeojson, 'district');
+                
+                updateMap(); // Draw empty states map
+            } catch (err) {
+                console.error(err);
+                showToast("Failed to load map boundaries. Please check your connection.");
+            }
+            
+            // Load police stations
+            loadPoliceStations();
+
+            // Fire and forget background fetches
+            fetchPopulationData();
+            fetchIncomeData();
+            fetchPovertyData();
+            fetchInequalityData();
+            fetchUnemploymentData();
+        }
+
+        // Cache square kilometers area for Density calculations
+        function calculateGeoAreas(geoJsonData, level) {
+            turf.featureEach(geoJsonData, function (currentFeature) {
+                const name = normalizeName(getFeatureName(currentFeature));
+                if (name) {
+                    const areaSqMeters = turf.area(currentFeature);
+                    geoAreaCache[level][name] = areaSqMeters / 1000000; // Convert to Sq KM
+                }
+            });
+        }
+
+        // Helper: check if a row belongs to Kedah
+        function isKedahRow(row) { return normalizeName(row.state) === 'kedah'; }
+
+        async function fetchPopulationData() {
+            try {
+                const res = await fetch('https://api.data.gov.my/data-catalogue/?id=population_district&limit=100000');
+                if (!res.ok) return;
+                const json = await res.json();
+                const data = (json.data || json).filter(isKedahRow);
+                
+                let isThousands = false;
+                const maxPop = Math.max(...data.map(d => Number(d.population) || 0));
+                if (maxPop < 100000) isThousands = true;
+
+                data.forEach(row => {
+                    let yr = row.date ? String(row.date).substring(0, 4) : null;
+                    if (!yr || yr < '2016') return; 
+                    
+                    let st = normalizeName(row.state);
+                    let dist = normalizeName(row.district);
+                    let pop = Number(row.population) || 0;
+                    if (isThousands) pop *= 1000;
+                    
+                    if (st) {
+                        if (!popLookup.state[st]) popLookup.state[st] = {};
+                        if (!popLookup.state[st][yr]) popLookup.state[st][yr] = 0;
+                        popLookup.state[st][yr] += pop;
+                    }
+                    if (dist && dist !== 'all') {
+                        if (!popLookup.district[dist]) popLookup.district[dist] = {};
+                        if (!popLookup.district[dist][yr]) popLookup.district[dist][yr] = 0;
+                        popLookup.district[dist][yr] += pop;
+                    }
+                });
+            } catch (err) {
+                console.error("Could not fetch population data", err);
+            }
+        }
+
+        async function fetchIncomeData() {
+            try {
+                const [distRes, stateRes] = await Promise.all([
+                    fetch('https://api.data.gov.my/data-catalogue/?id=hh_income_district&limit=100000'),
+                    fetch('https://api.data.gov.my/data-catalogue/?id=hh_income_state&limit=100000')
+                ]);
+                
+                if (distRes.ok) {
+                    const json = await distRes.json();
+                    const data = (json.data || json).filter(isKedahRow);
+                    data.forEach(row => {
+                        let yr = row.date ? String(row.date).substring(0, 4) : null;
+                        if (!yr) return;
+                        let dist = normalizeName(row.district);
+                        let income = Number(row.income_median) || 0;
+                        if (income > 0 && dist && dist !== 'all') {
+                            if (!incomeLookup.district[dist]) incomeLookup.district[dist] = {};
+                            incomeLookup.district[dist][yr] = income;
+                        }
+                    });
+                }
+
+                if (stateRes.ok) {
+                    const json = await stateRes.json();
+                    const data = (json.data || json).filter(isKedahRow);
+                    data.forEach(row => {
+                        let yr = row.date ? String(row.date).substring(0, 4) : null;
+                        if (!yr) return;
+                        let st = normalizeName(row.state);
+                        let income = Number(row.income_median) || 0;
+                        if (income > 0 && st) {
+                            if (!incomeLookup.state[st]) incomeLookup.state[st] = {};
+                            incomeLookup.state[st][yr] = income;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Could not fetch income data", err);
+            }
+        }
+
+        async function fetchPovertyData() {
+            try {
+                const [distRes, stateRes] = await Promise.all([
+                    fetch('https://api.data.gov.my/data-catalogue/?id=hh_poverty_district&limit=100000'),
+                    fetch('https://api.data.gov.my/data-catalogue/?id=hh_poverty_state&limit=100000')
+                ]);
+                
+                if (distRes.ok) {
+                    const json = await distRes.json();
+                    const data = (json.data || json).filter(isKedahRow);
+                    data.forEach(row => {
+                        let yr = row.date ? String(row.date).substring(0, 4) : null;
+                        if (!yr) return;
+                        let dist = normalizeName(row.district);
+                        let pov = row.poverty_relative !== undefined ? Number(row.poverty_relative) : Number(row.poverty_absolute || row.poverty);
+                        if (!isNaN(pov) && dist && dist !== 'all') {
+                            if (!povertyLookup.district[dist]) povertyLookup.district[dist] = {};
+                            povertyLookup.district[dist][yr] = pov;
+                        }
+                    });
+                }
+
+                if (stateRes.ok) {
+                    const json = await stateRes.json();
+                    const data = (json.data || json).filter(isKedahRow);
+                    data.forEach(row => {
+                        let yr = row.date ? String(row.date).substring(0, 4) : null;
+                        if (!yr) return;
+                        let st = normalizeName(row.state);
+                        let pov = row.poverty_relative !== undefined ? Number(row.poverty_relative) : Number(row.poverty_absolute || row.poverty);
+                        if (!isNaN(pov) && st) {
+                            if (!povertyLookup.state[st]) povertyLookup.state[st] = {};
+                            povertyLookup.state[st][yr] = pov;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Could not fetch poverty data", err);
+            }
+        }
+
+        async function fetchInequalityData() {
+            try {
+                const [distRes, stateRes] = await Promise.all([
+                    fetch('https://api.data.gov.my/data-catalogue/?id=hh_inequality_district&limit=100000'),
+                    fetch('https://api.data.gov.my/data-catalogue/?id=hh_inequality_state&limit=100000')
+                ]);
+                
+                if (distRes.ok) {
+                    const json = await distRes.json();
+                    const data = (json.data || json).filter(isKedahRow);
+                    data.forEach(row => {
+                        let yr = row.date ? String(row.date).substring(0, 4) : null;
+                        if (!yr) return;
+                        let dist = normalizeName(row.district);
+                        let gini = Number(row.gini);
+                        if (!isNaN(gini) && dist && dist !== 'all') {
+                            if (!inequalityLookup.district[dist]) inequalityLookup.district[dist] = {};
+                            inequalityLookup.district[dist][yr] = gini;
+                        }
+                    });
+                }
+
+                if (stateRes.ok) {
+                    const json = await stateRes.json();
+                    const data = (json.data || json).filter(isKedahRow);
+                    data.forEach(row => {
+                        let yr = row.date ? String(row.date).substring(0, 4) : null;
+                        if (!yr) return;
+                        let st = normalizeName(row.state);
+                        let gini = Number(row.gini);
+                        if (!isNaN(gini) && st) {
+                            if (!inequalityLookup.state[st]) inequalityLookup.state[st] = {};
+                            inequalityLookup.state[st][yr] = gini;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Could not fetch inequality data", err);
+            }
+        }
+
+        async function fetchUnemploymentData() {
+            try {
+                const [distRes, stateRes] = await Promise.all([
+                    fetch('https://api.data.gov.my/data-catalogue/?id=lfs_district&limit=100000'),
+                    fetch('https://api.data.gov.my/data-catalogue/?id=lfs_state&limit=100000')
+                ]);
+                
+                if (distRes.ok) {
+                    const json = await distRes.json();
+                    const data = (json.data || json).filter(isKedahRow);
+                    data.forEach(row => {
+                        let yr = row.date ? String(row.date).substring(0, 4) : null;
+                        if (!yr) return;
+                        let dist = normalizeName(row.district);
+                        let uRate = row.u_rate !== undefined ? Number(row.u_rate) : Number(row.unemployment_rate);
+                        if (!isNaN(uRate) && dist && dist !== 'all') {
+                            if (!unemploymentLookup.district[dist]) unemploymentLookup.district[dist] = {};
+                            unemploymentLookup.district[dist][yr] = uRate;
+                        }
+                    });
+                }
+
+                if (stateRes.ok) {
+                    const json = await stateRes.json();
+                    const data = (json.data || json).filter(isKedahRow);
+                    data.forEach(row => {
+                        let yr = row.date ? String(row.date).substring(0, 4) : null;
+                        if (!yr) return;
+                        let st = normalizeName(row.state);
+                        let uRate = row.u_rate !== undefined ? Number(row.u_rate) : Number(row.unemployment_rate);
+                        if (!isNaN(uRate) && st) {
+                            if (!unemploymentLookup.state[st]) unemploymentLookup.state[st] = {};
+                            unemploymentLookup.state[st][yr] = uRate;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Could not fetch unemployment data", err);
+            }
+        }
+
+        // --- Data Fetching Helpers ---
+        function getMetric(lookup, level, normName, targetYear) {
+            const levelData = lookup[level];
+            if (!levelData || !levelData[normName]) return { value: undefined, year: targetYear };
+            
+            let val = levelData[normName][targetYear];
+            if (val !== undefined) return { value: val, year: targetYear };
+
+            const availableYrs = Object.keys(levelData[normName]).sort().reverse();
+            if (availableYrs.length > 0) {
+                let targetYrNum = targetYear === 'All' ? 9999 : parseInt(targetYear);
+                let closestYr = availableYrs.find(y => parseInt(y) <= targetYrNum) || availableYrs[0];
+                return { value: levelData[normName][closestYr], year: closestYr };
+            }
+            return { value: undefined, year: targetYear };
+        }
+
+        function getRiskScoreDetailed(normName) {
+            let incVal = getMetric(incomeLookup, filters.level, normName, filters.year === 'All' ? '2022' : filters.year).value;
+            let povVal = getMetric(povertyLookup, filters.level, normName, filters.year === 'All' ? '2022' : filters.year).value;
+            let uRateVal = getMetric(unemploymentLookup, filters.level, normName, filters.year === 'All' ? '2023' : filters.year).value;
+            let giniVal = getMetric(inequalityLookup, filters.level, normName, filters.year === 'All' ? '2022' : filters.year).value;
+
+            if (incVal !== undefined && povVal !== undefined) {
+                // Individual risk components (0-10)
+                let incRisk = (1 - (Math.min(Math.max(incVal, 2500), 12500) - 2500) / 10000) * 10;
+                let povRisk = (Math.min(Math.max(povVal, 0), 25) / 25) * 10;
+                let safeGini = giniVal !== undefined ? giniVal : 0.35;
+                let giniRisk = (Math.min(Math.max(safeGini, 0.25), 0.45) - 0.25) / 0.2 * 10;
+                let safeUrate = uRateVal !== undefined ? uRateVal : 3.5;
+                let unempRisk = (Math.min(Math.max(safeUrate, 2), 10) - 2) / 8 * 10;
+                
+                // Final Weighted Score
+                let score = (incRisk * 0.30) + (povRisk * 0.30) + (unempRisk * 0.25) + (giniRisk * 0.15);
+                
+                return {
+                    score: score,
+                    components: {
+                        income: incRisk,
+                        poverty: povRisk,
+                        unemployment: unempRisk,
+                        inequality: giniRisk
+                    }
+                };
+            }
+            return null;
+        }
+
+        // --- UI Interactions ---
+        function showToast(msg, duration = 4000) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => { toast.classList.remove('opacity-0'); }, 10);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, duration);
+        }
+
+        // Map Layer Toggle Logic
+        document.getElementById('layerCrimeBtn').addEventListener('click', () => {
+            currentLayer = 'crime';
+            document.getElementById('layerCrimeBtn').classList.add('bg-white', 'shadow-sm', 'text-red-600');
+            document.getElementById('layerCrimeBtn').classList.remove('text-gray-500', 'hover:text-gray-800');
+            document.getElementById('layerRiskBtn').classList.remove('bg-white', 'shadow-sm', 'text-blue-600');
+            document.getElementById('layerRiskBtn').classList.add('text-gray-500', 'hover:text-gray-800');
+            updateMap();
+        });
+
+        document.getElementById('layerRiskBtn').addEventListener('click', () => {
+            currentLayer = 'risk';
+            document.getElementById('layerRiskBtn').classList.add('bg-white', 'shadow-sm', 'text-blue-600');
+            document.getElementById('layerRiskBtn').classList.remove('text-gray-500', 'hover:text-gray-800');
+            document.getElementById('layerCrimeBtn').classList.remove('bg-white', 'shadow-sm', 'text-red-600');
+            document.getElementById('layerCrimeBtn').classList.add('text-gray-500', 'hover:text-gray-800');
+            updateMap();
+        });
+
+        // View Level Toggle Logic
+                // Collapsible Filters Toggle
+        document.getElementById('filtersToggle').addEventListener('click', () => {
+            const content = document.getElementById('filtersContent');
+            const chevron = document.getElementById('filtersChevron');
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        });
+
+document.getElementById('levelStateBtn').addEventListener('click', () => {
+            filters.level = 'state';
+            document.getElementById('levelStateBtn').classList.add('bg-white', 'shadow-sm', 'text-red-600');
+            document.getElementById('levelStateBtn').classList.remove('text-gray-500', 'hover:text-gray-800');
+            document.getElementById('levelDistrictBtn').classList.remove('bg-white', 'shadow-sm', 'text-red-600');
+            document.getElementById('levelDistrictBtn').classList.add('text-gray-500', 'hover:text-gray-800');
+            updateMap();
+        });
+
+        document.getElementById('levelDistrictBtn').addEventListener('click', () => {
+            filters.level = 'district';
+            document.getElementById('levelDistrictBtn').classList.add('bg-white', 'shadow-sm', 'text-red-600');
+            document.getElementById('levelDistrictBtn').classList.remove('text-gray-500', 'hover:text-gray-800');
+            document.getElementById('levelStateBtn').classList.remove('bg-white', 'shadow-sm', 'text-red-600');
+            document.getElementById('levelStateBtn').classList.add('text-gray-500', 'hover:text-gray-800');
+            updateMap();
+        });
+
+        ['category', 'type'].forEach(f => {
+            document.getElementById(f + 'Filter').addEventListener('change', (e) => {
+                filters[f] = e.target.value;
+                updateMap();
+            });
+        });
+
+        document.getElementById('yearSlider').addEventListener('input', (e) => {
+            const idx = parseInt(e.target.value);
+            filters.year = availableYears[idx];
+            document.getElementById('yearDisplay').textContent = filters.year === 'All' ? 'All Years' : filters.year;
+            updateMap();
+        });
+
+
+        // --- Amenities Layer Logic ---
+        function loadPoliceStations() {
+            policeData = POLICE_STATIONS_GEOJSON;
+            updateStationCount();
+            renderPoliceMarkers();
+        }
+
+        function updateStationCount() {
+            if (!policeData) return;
+            const count = policeData.features.filter(f => visibleTypes.has(f.properties.type)).length;
+            document.getElementById('stationCount').textContent = count + ' / ' + policeData.features.length + ' stations';
+        }
+
+        function renderPoliceMarkers() {
+            if (policeLayerGroup) map.removeLayer(policeLayerGroup);
+            if (coverageLayerGroup) map.removeLayer(coverageLayerGroup);
+            policeLayerGroup = L.layerGroup();
+            coverageLayerGroup = L.layerGroup();
+
+            if (!policeData) return;
+
+            const typeIcons = {
+                headquarters: { color: '#1e3a8a', prefix: 'HQ', size: 28 },
+                balai:        { color: '#dc2626', prefix: 'BP', size: 24 },
+                pondok:       { color: '#f59e0b', prefix: 'PP', size: 20 },
+                traffic:      { color: '#2563eb', prefix: 'TP', size: 22 },
+                specialist:   { color: '#7c3aed', prefix: 'SP', size: 22 },
+                komuniti:     { color: '#059669', prefix: 'KP', size: 20 },
+                other:        { color: '#6b7280', prefix: '??', size: 18 },
+                unknown:      { color: '#6b7280', prefix: '??', size: 18 }
+            };
+
+            policeData.features.forEach(f => {
+                const [lon, lat] = f.geometry.coordinates;
+                const props = f.properties;
+                const sType = props.type || 'unknown';
+
+                // Skip if type not visible
+                if (!visibleTypes.has(sType)) return;
+
+                const iconDef = typeIcons[sType] || typeIcons.unknown;
+
+                const icon = L.divIcon({
+                    className: 'police-marker',
+                    html: '<div style="background:' + iconDef.color + ';color:#fff;width:' + iconDef.size + 'px;height:' + iconDef.size + 'px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,0.3);border:2px solid #fff;">' + iconDef.prefix + '</div>',
+                    iconSize: [iconDef.size, iconDef.size],
+                    iconAnchor: [iconDef.size / 2, iconDef.size / 2]
+                });
+
+                let popupHtml = '<div style="font-size:13px;min-width:160px"><strong>' + (props.name || 'Unnamed') + '</strong><br>';
+                popupHtml += '<span style="color:#6b7280">' + (sType || '').toUpperCase() + ' &mdash; ' + (props.district || '') + '</span>';
+                if (props.phone) popupHtml += '<br><span>&#9742; ' + props.phone + '</span>';
+                if (props.opening_hours) popupHtml += '<br><span>&#128336; ' + props.opening_hours + '</span>';
+                popupHtml += '</div>';
+
+                const marker = L.marker([lat, lon], { icon: icon }).bindPopup(popupHtml);
+                policeLayerGroup.addLayer(marker);
+
+                // Coverage circle
+                const circle = L.circle([lat, lon], {
+                    radius: coverageRadius * 1000,
+                    color: iconDef.color,
+                    fillColor: iconDef.color,
+                    fillOpacity: 0.08,
+                    weight: 1.5,
+                    dashArray: '6 4'
+                });
+                coverageLayerGroup.addLayer(circle);
+            });
+
+            policeLayerGroup.addTo(map);
+            coverageLayerGroup.addTo(map);
+        }
+
+        // Amenity type checkboxes
+        document.querySelectorAll('.amenity-check').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const type = cb.dataset.type;
+                if (cb.checked) {
+                    visibleTypes.add(type);
+                } else {
+                    visibleTypes.delete(type);
+                }
+                updateStationCount();
+                renderPoliceMarkers();
+            });
+        });
+
+        // Coverage slider
+        document.getElementById('coverageSlider').addEventListener('input', (e) => {
+            coverageRadius = parseInt(e.target.value);
+            document.getElementById('coverageDisplay').textContent = coverageRadius + ' km';
+            renderPoliceMarkers();
+        });
+
+        // --- MPV Patrol Route Logic ---
+        let patrolLayerGroup = null;
+
+        const districtCentroids = {
+            kotasetar: { lat: 6.12, lon: 100.37 },
+            kubangpasu: { lat: 6.30, lon: 100.42 },
+            padangterap: { lat: 6.25, lon: 100.60 },
+            sik: { lat: 5.82, lon: 100.75 },
+            baling: { lat: 5.68, lon: 100.92 },
+            kulim: { lat: 5.36, lon: 100.55 },
+            bandarbaharu: { lat: 5.15, lon: 100.55 },
+            pendang: { lat: 5.99, lon: 100.47 },
+            yan: { lat: 5.82, lon: 100.40 },
+            kualamuda: { lat: 5.65, lon: 100.48 },
+            pokoksena: { lat: 6.17, lon: 100.52 },
+            langkawi: { lat: 6.35, lon: 99.75 }
+        };
+
+        async function generatePatrolRoutes() {
+            if (patrolLayerGroup) map.removeLayer(patrolLayerGroup);
+            patrolLayerGroup = L.layerGroup();
+
+            if (!rawData || rawData.length === 0) {
+                showToast('Load crime data first before generating patrol routes');
+                return;
+            }
+
+            const mpvCount = parseInt(document.getElementById('mpvCount').value);
+            const counts = getAggregatedData();
+
+            // Get top crime districts
+            const sorted = Object.entries(counts)
+                .filter(([n, d]) => d.total > 0 && districtCentroids[n])
+                .sort((a, b) => b[1].total - a[1].total);
+
+            if (sorted.length === 0) {
+                showToast('No crime data to generate routes');
+                return;
+            }
+
+            // Distribute hotspots across MPVs (round-robin by severity)
+            const mpvAssignments = [];
+            for (let i = 0; i < mpvCount; i++) mpvAssignments.push([]);
+            sorted.forEach((entry, idx) => {
+                mpvAssignments[idx % mpvCount].push(entry);
+            });
+
+            const routeColors = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+            let summaryHtml = '';
+            let successCount = 0;
+
+            for (let m = 0; m < mpvAssignments.length; m++) {
+                const hotspots = mpvAssignments[m].map(([name, data]) => ({
+                    name, crimes: data.total,
+                    lat: districtCentroids[name].lat,
+                    lon: districtCentroids[name].lon
+                }));
+
+                if (hotspots.length === 0) continue;
+
+                // Find nearest visible balai polis to first hotspot
+                const firstH = hotspots[0];
+                let nearestStation = null, nearestDist = Infinity;
+                if (policeData) {
+                    policeData.features.forEach(f => {
+                        if (!visibleTypes.has(f.properties.type)) return;
+                        const [sLon, sLat] = f.geometry.coordinates;
+                        const dist = Math.sqrt(Math.pow(firstH.lat - sLat, 2) + Math.pow(firstH.lon - sLon, 2));
+                        if (dist < nearestDist) { nearestDist = dist; nearestStation = f; }
+                    });
+                }
+
+                if (!nearestStation) continue;
+
+                const [sLon, sLat] = nearestStation.geometry.coordinates;
+                const color = routeColors[m % routeColors.length];
+
+                // Build waypoints: station -> hotspots -> back to station
+                const waypoints = [sLon + ',' + sLat];
+                hotspots.forEach(h => waypoints.push(h.lon + ',' + h.lat));
+                waypoints.push(sLon + ',' + sLat);
+
+                try {
+                    const url = 'https://router.project-osrm.org/route/v1/driving/' + waypoints.join(';') + '?overview=full&geometries=geojson';
+                    const res = await fetch(url);
+                    const data = await res.json();
+
+                    if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                        const route = data.routes[0];
+                        const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+
+                        // Route polyline
+                        L.polyline(coords, {
+                            color: color,
+                            weight: 5,
+                            opacity: 0.7,
+                            dashArray: '10 6',
+                            lineCap: 'round'
+                        }).addTo(patrolLayerGroup);
+
+                        // MPV marker at station
+                        L.marker([sLat, sLon], {
+                            icon: L.divIcon({
+                                className: 'mpv-marker',
+                                html: '<div style="background:' + color + ';color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.3);border:2px solid #fff;">' + (m+1) + '</div>',
+                                iconSize: [30, 30],
+                                iconAnchor: [15, 15]
+                            })
+                        }).bindPopup(
+                            '<b>MPV ' + (m+1) + '</b><br>' +
+                            'From: ' + nearestStation.properties.name + '<br>' +
+                            'Distance: ' + (route.distance/1000).toFixed(1) + ' km<br>' +
+                            'Est: ' + Math.round(route.duration/60) + ' min<br>' +
+                            'Patrols: ' + hotspots.map(h => h.name).join(', ')
+                        ).addTo(patrolLayerGroup);
+
+                        // Hotspot dots along route
+                        hotspots.forEach(h => {
+                            L.circleMarker([h.lat, h.lon], {
+                                radius: 6, color: color, fillColor: color,
+                                fillOpacity: 0.4, weight: 2
+                            }).addTo(patrolLayerGroup);
+                        });
+
+                        summaryHtml += '<div class="flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-full" style="background:' + color + '"></span> MPV' + (m+1) + ': ' + nearestStation.properties.name + ' → ' + hotspots.map(h => h.name).join(' → ') + ' <span class="text-gray-400">(' + (route.distance/1000).toFixed(0) + 'km, ~' + Math.round(route.duration/60) + 'min)</span></div>';
+                        successCount++;
+                    }
+                } catch(e) {
+                    console.error('Route error MPV' + (m+1), e);
+                }
+            }
+
+            patrolLayerGroup.addTo(map);
+            // Bring patrol routes above heatmap
+            if (patrolLayerGroup) {
+                patrolLayerGroup.eachLayer(l => l.bringToFront());
+            }
+
+            if (successCount === 0) {
+                showToast('Could not generate routes. Check network.');
+            } else {
+                const summaryEl = document.getElementById('patrolSummary');
+                summaryEl.innerHTML = summaryHtml;
+                summaryEl.classList.remove('hidden');
+                showToast(successCount + ' patrol route(s) generated');
+            }
+        }
+
+        document.getElementById('generatePatrolBtn').addEventListener('click', generatePatrolRoutes);
+
+        document.getElementById('clearPatrolBtn').addEventListener('click', () => {
+            if (patrolLayerGroup) map.removeLayer(patrolLayerGroup);
+            patrolLayerGroup = null;
+            document.getElementById('patrolSummary').classList.add('hidden');
+        });
+
+        // --- Data Parsing ---
+        
+        // API Fetch Logic
+        document.getElementById('fetchApiBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('fetchApiBtn');
+            let originalHtml = btn.innerHTML;
+            
+            try {
+                showToast("Fetching live data from data.gov.my...");
+                btn.disabled = true;
+                btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Loading Data...`;
+                
+                const response = await fetch('https://api.data.gov.my/data-catalogue/?id=crime_district&limit=100000');
+                if (!response.ok) throw new Error("API response error");
+                
+                const jsonRes = await response.json();
+                
+                if (jsonRes && jsonRes.data && Array.isArray(jsonRes.data)) {
+                    rawData = jsonRes.data;
+                } else if (Array.isArray(jsonRes)) {
+                    rawData = jsonRes;
+                } else {
+                    throw new Error("Invalid data format returned");
+                }
+
+                // Filter to Kedah only
+                rawData = rawData.filter(row => {
+                    const st = (row.state || '').toLowerCase().replace(/darul ahsan/i, '').trim();
+                    return st === 'kedah';
+                });
+                
+                // Update button to show success state
+                originalHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Live Data Loaded`;
+                btn.classList.replace('bg-red-600', 'bg-green-600');
+                btn.classList.replace('hover:bg-red-700', 'hover:bg-green-700');
+
+                populateFilters();
+                updateMap();
+                displayRandomFact();
+                showToast("Live dataset successfully loaded!");
+                
+            } catch (err) {
+                console.error(err);
+                showToast("Failed to fetch API data. Please try again later.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        });
+
+        function populateFilters() {
+            const years = new Set();
+            const categories = new Set();
+            const types = new Set();
+
+            rawData.forEach(row => {
+                if (row.date) {
+                    const dateStr = String(row.date);
+                    if(dateStr.length >= 4) {
+                        const yr = dateStr.substring(0, 4);
+                        if (!isNaN(yr)) years.add(yr);
+                        row.year = yr; 
+                    }
+                }
+                if (row.category) categories.add(row.category);
+                if (row.type) types.add(row.type);
+            });
+
+            const fillSelect = (id, items) => {
+                const selectElem = document.getElementById(id);
+                selectElem.innerHTML = '<option value="All">All / Total</option>';
+                [...items].sort().forEach(item => {
+                    if(item !== 'all' && item !== 'All') {
+                        const opt = document.createElement('option');
+                        opt.value = item;
+                        opt.textContent = item.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                        selectElem.appendChild(opt);
+                    }
+                });
+                selectElem.removeAttribute('disabled');
+            };
+
+            const sortedYears = [...years].sort();
+            availableYears = ['All', ...sortedYears];
+            
+            const slider = document.getElementById('yearSlider');
+            slider.min = 0;
+            slider.max = availableYears.length - 1;
+            slider.value = 0;
+            slider.disabled = false;
+            
+            const ticks = document.getElementById('yearTicks');
+            if (sortedYears.length > 0) {
+                ticks.innerHTML = `<span>All</span><span>${sortedYears[sortedYears.length-1]}</span>`;
+            } else {
+                ticks.innerHTML = `<span>All</span>`;
+            }
+            document.getElementById('yearDisplay').textContent = 'All Years';
+            filters.year = 'All';
+
+            fillSelect('categoryFilter', categories);
+            fillSelect('typeFilter', types);
+            
+            // Enable toggles once data is loaded
+            ['layerCrimeBtn', 'layerRiskBtn', 'levelStateBtn', 'levelDistrictBtn'].forEach(id => {
+                document.getElementById(id).disabled = false;
+            });
+            
+            document.getElementById('chartContainer').classList.remove('hidden');
+        }
+
+        // --- Interactive Fact Banner Logic ---
+        function formatCrimeType(type) {
+            if (!type) return "crimes";
+            return type.split('_').join(' ');
+        }
+
+        function displayRandomFact() {
+            if (!rawData || rawData.length === 0) return;
+            
+            const validData = rawData.filter(r => 
+                r.district && r.district.toLowerCase() !== 'all' && 
+                r.type && r.type.toLowerCase() !== 'all' && 
+                Number(r.crimes) > 0
+            );
+            
+            if (validData.length === 0) return;
+
+            const row = validData[Math.floor(Math.random() * validData.length)];
+            const year = row.year || String(row.date).substring(0, 4);
+            const district = row.district;
+            const state = row.state;
+            const crimes = Number(row.crimes);
+            const type = formatCrimeType(row.type);
+
+            const templates = [
+                `In ${year}, there were <strong class="font-extrabold text-yellow-950">${crimes}</strong> reported cases of ${type} in <strong>${district}</strong>, ${state}.`,
+                `<strong class="font-extrabold text-yellow-950">${district}</strong> recorded <strong>${crimes}</strong> incidents of ${type} in ${year}.`,
+                `On average, <strong>${(crimes/12).toFixed(1)}</strong> ${type} cases happened every month in <strong>${district}</strong> during ${year}.`
+            ];
+
+            if (crimes >= 365) {
+                templates.push(`Every day, an average of <strong class="font-extrabold text-yellow-950">${Math.floor(crimes/365)}</strong> ${type} cases happened in <strong>${district}</strong> in ${year}.`);
+            } else if (crimes >= 52) {
+                templates.push(`Every week, an average of <strong class="font-extrabold text-yellow-950">${Math.floor(crimes/52)}</strong> ${type} cases happened in <strong>${district}</strong> in ${year}.`);
+            }
+
+            const text = templates[Math.floor(Math.random() * templates.length)];
+            document.getElementById('factText').innerHTML = text;
+            
+            const banner = document.getElementById('factBanner');
+            banner.classList.remove('hidden');
+            banner.classList.add('block');
+        }
+
+                document.getElementById('closeFactBanner').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('factBanner').classList.add('hidden');
+        });
+
+document.getElementById('factBanner').addEventListener('click', displayRandomFact);
+
+        // --- Consolidated Dataset Download Logic ---
+        document.getElementById('downloadCsvBtn').addEventListener('click', () => {
+            if (!rawData || rawData.length === 0) {
+                showToast("No data available. Please load a dataset first.");
+                return;
+            }
+
+            showToast("Generating consolidated dataset...");
+
+            const getClosestData = (lookup, locationName, targetYear) => {
+                if (!lookup || !lookup[locationName]) return '';
+                if (lookup[locationName][targetYear] !== undefined) return lookup[locationName][targetYear];
+                
+                const availableYrs = Object.keys(lookup[locationName]).sort().reverse();
+                if (availableYrs.length === 0) return '';
+                let targetYrNum = parseInt(targetYear) || 9999;
+                let closestYr = availableYrs.find(y => parseInt(y) <= targetYrNum) || availableYrs[0];
+                return lookup[locationName][closestYr] !== undefined ? lookup[locationName][closestYr] : '';
+            };
+
+            const exportData = rawData.map(row => {
+                const yr = row.year || (row.date ? String(row.date).substring(0, 4) : '');
+                const normSt = normalizeName(row.state);
+                const normDist = normalizeName(row.district);
+                
+                let pop = '', inc = '', pov = '', gini = '', uRate = '', areaKm2 = '', popDensity = '';
+
+                if (normDist && normDist !== 'all') {
+                    pop = getClosestData(popLookup.district, normDist, yr);
+                    inc = getClosestData(incomeLookup.district, normDist, yr);
+                    pov = getClosestData(povertyLookup.district, normDist, yr);
+                    gini = getClosestData(inequalityLookup.district, normDist, yr);
+                    uRate = getClosestData(unemploymentLookup.district, normDist, yr);
+                    areaKm2 = geoAreaCache.district[normDist] || '';
+                } else if (normSt) {
+                    pop = getClosestData(popLookup.state, normSt, yr);
+                    inc = getClosestData(incomeLookup.state, normSt, yr);
+                    pov = getClosestData(povertyLookup.state, normSt, yr);
+                    gini = getClosestData(inequalityLookup.state, normSt, yr);
+                    uRate = getClosestData(unemploymentLookup.state, normSt, yr);
+                    areaKm2 = geoAreaCache.state[normSt] || '';
+                }
+
+                if (pop && areaKm2) {
+                    popDensity = (pop / areaKm2).toFixed(1);
+                }
+
+                // Calculate Crime Rate per 100k
+                let crimeRate = '';
+                let crimes = Number(row.crimes) || 0;
+                if (pop > 0) {
+                    crimeRate = ((crimes / pop) * 100000).toFixed(1);
+                }
+
+                // Calculate Socioeconomic Risk Score
+                let riskScore = '';
+                if (inc !== '' && pov !== '') {
+                    let incRisk = (1 - (Math.min(Math.max(inc, 2500), 12500) - 2500) / 10000) * 10;
+                    let povRisk = (Math.min(Math.max(pov, 0), 25) / 25) * 10;
+                    let safeGini = gini !== '' ? gini : 0.35;
+                    let giniRisk = (Math.min(Math.max(safeGini, 0.25), 0.45) - 0.25) / 0.2 * 10;
+                    let safeUrate = uRate !== '' ? uRate : 3.5;
+                    let unempRisk = (Math.min(Math.max(safeUrate, 2), 10) - 2) / 8 * 10;
+                    
+                    riskScore = ((incRisk * 0.30) + (povRisk * 0.30) + (unempRisk * 0.25) + (giniRisk * 0.15)).toFixed(1);
+                }
+
+                return {
+                    State: row.state || '',
+                    District: row.district || '',
+                    Category: row.category || '',
+                    Type: row.type || '',
+                    Year: yr,
+                    Crimes: crimes,
+                    Population: pop,
+                    Area_SqKm: areaKm2 ? areaKm2.toFixed(1) : '',
+                    Density_Per_SqKm: popDensity,
+                    Crime_Rate_Per_100k: crimeRate,
+                    Median_Income_RM: inc,
+                    Relative_Poverty_Pct: pov,
+                    Unemployment_Pct: uRate,
+                    Gini_Coefficient: gini,
+                    Socioeconomic_Risk_Score: riskScore
+                };
+            });
+
+            const csvString = Papa.unparse(exportData);
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "malaysia_crime_socioeconomic_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        function normalizeName(name) {
+            if (!name) return "";
+            return name.toLowerCase()
+                .replace(/w\.p\.\s*/g, '')
+                .replace(/federal territory of /g, '')
+                .replace(/darul\s+[a-z']+/g, '')
+                .replace(/pulau pinang/g, 'penang')
+                .replace(/[^a-z0-9]/g, '');
+        }
+
+        function getFeatureName(feature) {
+            const props = feature.properties;
+            for (const key of ['name', 'Name', 'NAME', 'NAME_1', 'NAME_2', 'shapeName', 'nam_daerah']) {
+                if (props[key]) return props[key];
+            }
+            return "Unknown";
+        }
+
+        // --- Data Aggregation Logic ---
+        function getAggregatedData() {
+            let counts = {};
+
+            rawData.forEach(row => {
+                if (!row.state || row.state === 'Malaysia') return;
+                if (row.district === 'All' || row.district === 'all') return; 
+
+                if (filters.year !== 'All' && row.year !== filters.year) return;
+                if (filters.category !== 'All' && row.category !== filters.category) return;
+
+                if (row.type === 'all' || row.type === 'All') return;
+                if (filters.type !== 'All' && row.type !== filters.type) return;
+
+                let nameKey = filters.level === 'state' ? normalizeName(row.state) : normalizeName(row.district);
+
+                if (!counts[nameKey]) counts[nameKey] = { total: 0, types: {} };
+                
+                let val = Number(row.crimes) || 0;
+                counts[nameKey].total += val;
+                
+                if (!counts[nameKey].types[row.type]) counts[nameKey].types[row.type] = 0;
+                counts[nameKey].types[row.type] += val;
+            });
+
+            return counts;
+        }
+
+        // --- Chart Rendering Logic ---
+        function renderChart() {
+            if (!rawData || rawData.length === 0) return;
+
+            const yearCounts = {};
+            const activeYears = availableYears.filter(y => y !== 'All').sort();
+            activeYears.forEach(y => yearCounts[y] = 0);
+
+            rawData.forEach(row => {
+                if (!row.state || row.state === 'Malaysia') return;
+                if (row.district === 'All' || row.district === 'all') return; 
+                if (filters.category !== 'All' && row.category !== filters.category) return;
+                if (row.type === 'all' || row.type === 'All') return;
+                if (filters.type !== 'All' && row.type !== filters.type) return;
+
+                const yr = row.year || (row.date ? String(row.date).substring(0, 4) : null);
+                if (yr && yearCounts[yr] !== undefined) {
+                    yearCounts[yr] += (Number(row.crimes) || 0);
+                }
+            });
+
+            const dataPoints = activeYears.map(y => yearCounts[y]);
+
+            const lineColor = 'rgba(220, 38, 38, 0.8)';
+            const fillColor = 'rgba(220, 38, 38, 0.1)'; 
+            const defaultPointColor = 'rgba(239, 68, 68, 1)'; 
+            const highlightPointColor = 'rgba(153, 27, 27, 1)'; 
+
+            const pointBgColors = activeYears.map(y => y === filters.year ? highlightPointColor : defaultPointColor);
+            const pointRadii = activeYears.map(y => y === filters.year ? 6 : 3);
+
+            if (trendChart) {
+                trendChart.data.labels = activeYears;
+                trendChart.data.datasets[0].data = dataPoints;
+                trendChart.data.datasets[0].pointBackgroundColor = pointBgColors;
+                trendChart.data.datasets[0].pointBorderColor = pointBgColors;
+                trendChart.data.datasets[0].pointRadius = pointRadii;
+                trendChart.update();
+            } else {
+                const ctx = document.getElementById('trendChart').getContext('2d');
+                trendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: activeYears,
+                        datasets: [{
+                            label: 'Reported Crimes',
+                            data: dataPoints,
+                            borderColor: lineColor,
+                            backgroundColor: fillColor,
+                            borderWidth: 2,
+                            pointBackgroundColor: pointBgColors,
+                            pointBorderColor: pointBgColors,
+                            pointRadius: pointRadii,
+                            pointHoverRadius: 6,
+                            fill: true,
+                            tension: 0.3 
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.raw.toLocaleString() + ' cases';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { font: { size: 10 }, maxTicksLimit: 5 },
+                                grid: { color: '#e2e8f0' }
+                            },
+                            x: {
+                                ticks: { font: { size: 10 } },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // --- Rendering Map Elements ---
+        function getCrimeColor(d, max) {
+            if (d === 0) return '#f8fafc'; 
+            return d > max * 0.8 ? '#7f1d1d' : 
+                   d > max * 0.6 ? '#b91c1c' : 
+                   d > max * 0.4 ? '#ef4444' : 
+                   d > max * 0.2 ? '#f87171' : 
+                   d > 0         ? '#fca5a5' : 
+                                   '#fee2e2';  
+        }
+
+        // Dedicated color palette for Socioeconomic Risk Map
+        function getRiskColor(score) {
+            if (score === null || score === undefined) return '#f8fafc'; 
+            if (score >= 8) return '#991b1b'; // Dark Red (Very High Risk)
+            if (score >= 6) return '#ef4444'; // Red (High Risk)
+            if (score >= 4) return '#f97316'; // Orange (Medium Risk)
+            if (score >= 2) return '#eab308'; // Yellow (Low-Medium)
+            return '#22c55e';                 // Green (Low Risk)
+        }
+
+        function updateMap() {
+            // Close Right Info Panel on global updates to prevent stale data
+            document.getElementById('infoPanel').classList.add('hidden');
+            selectedLayer = null;
+
+            if (geojsonLayer) map.removeLayer(geojsonLayer);
+            
+            const geojsonData = filters.level === 'state' ? stateGeojson : districtGeojson;
+            if (!geojsonData) return;
+
+            const counts = getAggregatedData();
+            const crimeValues = Object.values(counts).map(c => c.total);
+            const maxCrimes = crimeValues.length > 0 ? Math.max(...crimeValues) : 0;
+
+            geojsonLayer = L.geoJSON(geojsonData, {
+                style: function(feature) {
+                    const name = getFeatureName(feature);
+                    const normName = normalizeName(name);
+                    
+                    let fillColor = districtColors[normName] || '#f8fafc';
+                    let fillOp = 0.4;
+                    
+                    if (currentLayer === 'crime') {
+                        const locData = counts[normName] || { total: 0 };
+                        const crimeCount = locData.total;
+                        if (crimeCount > 0) {
+                            fillColor = getCrimeColor(crimeCount, maxCrimes);
+                            fillOp = 0.85;
+                        } else {
+                            fillOp = 0.5;
+                        }
+                    } else if (currentLayer === 'risk') {
+                        const riskDetails = getRiskScoreDetailed(normName);
+                        const locData = counts[normName] || { total: 0 };
+                        const crimeCount = locData.total;
+
+                        if (riskDetails !== null && crimeCount > 0) {
+                            const totalRisk = riskDetails.score;
+                            
+                            let yearTarget = filters.year === 'All' ? '2023' : filters.year; 
+                            let popData = getMetric(popLookup, filters.level, normName, yearTarget);
+                            
+                            let rateNum = 0;
+                            if (popData.value !== undefined && popData.value > 0) {
+                                rateNum = (crimeCount / popData.value) * 100000;
+                            }
+                            
+                            // Normalize crime rate onto 0-10 scale
+                            let crimeScore = Math.min((rateNum / 500) * 10, 10);
+                            
+                            // Overall Area Risk (60% Socioeconomic, 40% Crime)
+                            let combinedRisk = (totalRisk * 0.6) + (crimeScore * 0.4);
+                            
+                            fillColor = getRiskColor(combinedRisk);
+                            fillOp = 0.85;
+                        }
+                        // If riskDetails is null OR crimeCount is 0, it defaults to district fillColor = '#f8fafc', fillOp = 0.4
+                    }
+
+                    return {
+                        fillColor: fillColor,
+                        weight: filters.level === 'state' ? 1.5 : 1,
+                        opacity: 1,
+                        color: '#cbd5e1', 
+                        fillOpacity: fillOp
+                    };
+                },
+                onEachFeature: function(feature, layer) {
+                    const name = getFeatureName(feature);
+                    const normName = normalizeName(name);
+                    const locData = counts[normName] || { total: 0, types: {} };
+                    const crimeCount = locData.total;
+                    
+                    // Retrieve unified metrics dynamically
+                    let yearTarget = filters.year === 'All' ? '2023' : filters.year; 
+                    let popData = getMetric(popLookup, filters.level, normName, yearTarget);
+                    let incData = getMetric(incomeLookup, filters.level, normName, filters.year === 'All' ? '2022' : filters.year);
+                    let povData = getMetric(povertyLookup, filters.level, normName, filters.year === 'All' ? '2022' : filters.year);
+                    let unempData = getMetric(unemploymentLookup, filters.level, normName, yearTarget);
+                    let giniData = getMetric(inequalityLookup, filters.level, normName, filters.year === 'All' ? '2022' : filters.year);
+
+                    // --- HTML Segment Generators ---
+                    let rate = 0;
+                    let popHtml = '';
+                    if (popData.value !== undefined) {
+                        rate = crimeCount > 0 ? ((crimeCount / popData.value) * 100000).toFixed(1) : 0;
+                        let areaSqKm = geoAreaCache[filters.level][normName] || 0;
+                        let densityStr = "N/A";
+                        if (areaSqKm > 0) {
+                            densityStr = (popData.value / areaSqKm).toLocaleString(undefined, {maximumFractionDigits: 0}) + ' /km�';
+                        }
+                        popHtml = `
+                            <div class="text-xs text-gray-600 flex justify-between items-center mt-1.5 border-t border-gray-100 pt-1.5">
+                                <span>Pop. (${popData.year}):</span>
+                                <span class="font-bold text-blue-700 ml-3">${Math.round(popData.value).toLocaleString()}</span>
+                            </div>
+                            <div class="text-xs text-gray-600 flex justify-between items-center mt-0.5">
+                                <span>Density:</span>
+                                <span class="font-bold text-gray-700 ml-3">${densityStr}</span>
+                            </div>
+                            <div class="text-xs text-gray-600 flex justify-between items-center mt-0.5">
+                                <span>Crime Rate / 100k:</span>
+                                <span class="font-bold ${rate > 0 ? 'text-red-600' : 'text-gray-400'} ml-3">${rate}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    let incomeHtml = '';
+                    if (incData.value !== undefined) {
+                        incomeHtml = `
+                            <div class="text-xs text-gray-600 flex justify-between items-center mt-1.5 border-t border-gray-100 pt-1.5">
+                                <span>Med. Income (${incData.year}):</span>
+                                <span class="font-bold text-green-700 ml-3">RM ${incData.value.toLocaleString()}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    let povertyHtml = '';
+                    if (povData.value !== undefined) {
+                        povertyHtml = `
+                            <div class="text-xs text-gray-600 flex justify-between items-center mt-0.5">
+                                <span>Rel. Poverty (${povData.year}):</span>
+                                <span class="font-bold text-orange-600 ml-3">${povData.value.toFixed(1)}%</span>
+                            </div>
+                        `;
+                    }
+
+                    let unempHtml = '';
+                    if (unempData.value !== undefined) {
+                        unempHtml = `
+                            <div class="text-xs text-gray-600 flex justify-between items-center mt-0.5">
+                                <span>Unemployment (${unempData.year}):</span>
+                                <span class="font-bold text-pink-600 ml-3">${unempData.value.toFixed(1)}%</span>
+                            </div>
+                        `;
+                    }
+
+                    let inequalityHtml = '';
+                    if (giniData.value !== undefined) {
+                        inequalityHtml = `
+                            <div class="text-xs text-gray-600 flex justify-between items-center mt-0.5">
+                                <span>Income Inequality (Gini) (${giniData.year}):</span>
+                                <span class="font-bold text-purple-600 ml-3">${giniData.value.toFixed(3)}</span>
+                            </div>
+                        `;
+                    }
+
+                    let riskHtml = '';
+                    let interpretationHtml = '';
+                    let combinedRiskHtml = '';
+                    let riskDetails = getRiskScoreDetailed(normName);
+                    
+                    if (riskDetails !== null) {
+                        const totalRisk = riskDetails.score;
+                        let riskColor = totalRisk >= 7 ? 'text-red-600' : (totalRisk >= 4 ? 'text-orange-500' : 'text-green-600');
+                        
+                        riskHtml = `
+                            <div class="text-xs text-gray-600 flex justify-between items-center mt-1.5 pt-1.5 border-t border-gray-200 bg-gray-50 -mx-1 px-1 rounded shadow-inner">
+                                <span class="font-bold uppercase tracking-wide text-[10px] text-gray-500">Socioeconomic Risk:</span>
+                                <span class="font-extrabold ${riskColor} ml-3 text-[13px]">${totalRisk.toFixed(1)} / 10</span>
+                            </div>
+                        `;
+
+                        // --- ADVANCED RISK ANALYSIS (COMBINED) ---
+                        if (crimeCount > 0) {
+                            const components = riskDetails.components;
+                            const drivers = [
+                                { label: 'low median earnings', val: components.income * 0.30 },
+                                { label: 'poverty levels', val: components.poverty * 0.30 },
+                                { label: 'lack of employment', val: components.unemployment * 0.25 },
+                                { label: 'wealth inequality', val: components.inequality * 0.15 }
+                            ];
+                            drivers.sort((a, b) => b.val - a.val);
+                            const topDriver = drivers[0].label;
+                            
+                            let rateNum = parseFloat(rate) || 0;
+                            
+                            // Normalize Crime Rate to 0-10 scale (Assuming 500 cases per 100k is maximum severity = 10)
+                            let crimeScore = Math.min((rateNum / 500) * 10, 10);
+                            
+                            // New Weightage: 60% Socioeconomic Risk, 40% Actual Crime Volume
+                            let combinedRisk = (totalRisk * 0.6) + (crimeScore * 0.4);
+                            let combinedColor = combinedRisk >= 7 ? 'text-red-600' : (combinedRisk >= 4 ? 'text-orange-500' : 'text-green-600');
+
+                            // Generate Combined Index HTML for the tooltip/list
+                            combinedRiskHtml = `
+                                <div class="mt-2 pt-1.5 border-t border-gray-200">
+                                    <div class="text-xs text-gray-600 flex justify-between items-center bg-gray-50 -mx-1 px-1 py-1.5 rounded shadow-inner">
+                                        <span class="font-bold uppercase tracking-wide text-[10px] text-gray-500">Combined Index:</span>
+                                        <span class="font-extrabold ${combinedColor} ml-3 text-[13px]">${combinedRisk.toFixed(1)} / 10</span>
+                                    </div>
+                                </div>
+                            `;
+
+                            // Theme for Combined Risk Analysis Banner
+                            let riskTheme = { bg: 'bg-green-50', border: 'border-green-100', text: 'text-green-800', icon: 'text-green-600', label: 'Safe Zone' };
+                            if (combinedRisk >= 7) {
+                                riskTheme = { bg: 'bg-red-50', border: 'border-red-100', text: 'text-red-800', icon: 'text-red-600', label: 'High Alert' };
+                            } else if (combinedRisk >= 4) {
+                                riskTheme = { bg: 'bg-orange-50', border: 'border-orange-100', text: 'text-orange-800', icon: 'text-orange-600', label: 'Moderate' };
+                            }
+                            
+                            let narrative = `<span class="opacity-80 text-[9px] block mb-2 mt-0.5">(60% Socioeconomic Strain + 40% Crime Volume)</span>`;
+                            
+                            if (totalRisk >= 6 && crimeScore >= 5) {
+                                narrative += `This area faces compounding risks. High economic strain (driven heavily by <strong>${topDriver}</strong>) correlates directly with the high crime rates. Financial desperation is likely driving local crime.`;
+                            } else if (totalRisk >= 6 && crimeScore < 5) {
+                                narrative += `A highly resilient community! Despite elevated economic strain from <strong>${topDriver}</strong>, the crime rate remains remarkably low. Points to strong local community bonds or highly effective policing.`;
+                            } else if (totalRisk < 6 && crimeScore >= 5) {
+                                narrative += `A classic "Target Zone". The local economy is relatively stable, yet crime volume is disproportionately high. Wealthier or commercial hubs here are likely attracting property theft from outsiders.`;
+                            } else {
+                                narrative += `A generally stable region. Manageable economic conditions safely correlate with the controlled, lower crime rates observed here.`;
+                            }
+
+                            interpretationHtml = `
+                                <div class="mt-6 pt-5 border-t border-gray-200">
+                                    <div class="mb-2 p-3 ${riskTheme.bg} rounded-xl border ${riskTheme.border} shadow-sm">
+                                        <div class="flex items-center justify-between mb-1.5">
+                                            <div class="flex items-center gap-1.5">
+                                                <!-- Shield Icon -->
+                                                <svg class="${riskTheme.icon}" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                                <span class="text-[11px] font-bold ${riskTheme.text} uppercase tracking-wider">Overall Area Risk</span>
+                                            </div>
+                                            <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-white/60 ${riskTheme.text} shadow-sm">${riskTheme.label}</span>
+                                        </div>
+                                        <p class="text-[11px] ${riskTheme.text} leading-relaxed">
+                                            ${narrative}
+                                        </p>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            // Missing or Zero Crime Data
+                            combinedRiskHtml = `
+                                <div class="mt-2 pt-1.5 border-t border-gray-200">
+                                    <div class="text-xs text-gray-600 flex justify-between items-center bg-gray-50 -mx-1 px-1 py-1.5 rounded shadow-inner">
+                                        <span class="font-bold uppercase tracking-wide text-[10px] text-gray-500">Combined Index:</span>
+                                        <span class="font-bold text-gray-400 ml-3 text-[13px]">N/A</span>
+                                    </div>
+                                </div>
+                            `;
+                            interpretationHtml = ''; 
+                        }
+                    }
+
+                    let typesHtml = '';
+                    if (crimeCount > 0 && locData.types) {
+                        const sortedTypes = Object.entries(locData.types).sort((a, b) => b[1] - a[1]);
+                        typesHtml = '<div class="mt-2 border-t border-gray-200 pt-1.5 space-y-0.5">';
+                        sortedTypes.forEach(([type, count]) => {
+                            const typeName = type.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                            typesHtml += `
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="text-gray-500 truncate mr-3 flex-1">${typeName}</span>
+                                    <span class="font-medium text-gray-700">${count.toLocaleString()}</span>
+                                </div>
+                            `;
+                        });
+                        typesHtml += '</div>';
+                    }
+                    
+                    // Unified inner HTML for both Tooltip and Sidebar
+                    const innerHtml = `
+                        <div class="text-sm text-gray-600 flex justify-between items-center mt-1 mb-1">
+                            <span>Total Crimes:</span>
+                            <span class="font-bold ${crimeCount > 0 ? 'text-red-600' : 'text-gray-400'} ml-3">
+                                ${crimeCount.toLocaleString()}
+                            </span>
+                        </div>
+                        ${popHtml}
+                        ${incomeHtml}
+                        ${povertyHtml}
+                        ${unempHtml}
+                        ${inequalityHtml}
+                        ${riskHtml}
+                        ${typesHtml}
+                        ${combinedRiskHtml}
+                    `;
+
+                    const tooltipContent = `
+                        <div class="px-1 min-w-[180px] max-w-[240px]">
+                            <div class="font-bold text-gray-800 text-[14px] border-b border-gray-200 pb-1 mb-1.5 uppercase tracking-wide">
+                                ${name}
+                            </div>
+                            ${innerHtml}
+                        </div>
+                    `;
+                    
+                    // Bind Hover Tooltip
+                    layer.bindTooltip(tooltipContent, {
+                        direction: 'top',
+                        sticky: true,
+                        className: 'bg-white/95 backdrop-blur shadow-2xl rounded-lg border border-gray-100 p-2'
+                    });
+                    
+                    // Map Interaction Handlers
+                    layer.on({
+                        mouseover: function(e) {
+                            if (selectedLayer !== e.target) {
+                                const l = e.target;
+                                l.setStyle({ weight: 3, color: '#1e293b', fillOpacity: 1 });
+                                l.bringToFront();
+                            }
+                        },
+                        mouseout: function(e) {
+                            if (selectedLayer !== e.target) {
+                                geojsonLayer.resetStyle(e.target);
+                            }
+                        },
+                        click: function(e) {
+                            // Stop map click event from firing and instantly closing the panel
+                            isFeatureClicked = true;
+                            setTimeout(() => isFeatureClicked = false, 100);
+                            
+                            if (e.originalEvent) {
+                                L.DomEvent.stopPropagation(e.originalEvent);
+                            }
+
+                            // Populate Right Info Panel
+                            document.getElementById('infoPanelTitle').textContent = name;
+                            document.getElementById('infoPanelContent').innerHTML = innerHtml + interpretationHtml;
+                            document.getElementById('infoPanel').classList.remove('hidden');
+
+                            // Manage visual selection states
+                            if (selectedLayer && selectedLayer !== e.target) {
+                                geojsonLayer.resetStyle(selectedLayer);
+                            }
+                            selectedLayer = e.target;
+                            e.target.setStyle({ weight: 4, color: '#2563eb', fillOpacity: 1 });
+                            e.target.bringToFront();
+                        }
+                    });
+                }
+            }).addTo(map);
+
+            updateLegend(maxCrimes);
+
+            // Bring patrol routes above heatmap
+            if (patrolLayerGroup) {
+                patrolLayerGroup.eachLayer(l => l.bringToFront());
+            }
+            renderChart();
+        }
+
+        function updateLegend(maxCrimes) {
+            const container = document.getElementById('legendContainer');
+            
+            if (currentLayer === 'risk') {
+                container.classList.remove('hidden');
+                let html = '<h4 class="font-bold text-xs uppercase tracking-wider text-gray-500 mb-3 border-b pb-1">Overall Area Risk</h4><div class="space-y-1.5 text-xs text-gray-700">';
+                
+                const bands = [
+                    { label: '8 - 10 (Very High)', color: '#991b1b' },
+                    { label: '6 - 8 (High)', color: '#ef4444' },
+                    { label: '4 - 6 (Medium)', color: '#f97316' },
+                    { label: '2 - 4 (Low-Medium)', color: '#eab308' },
+                    { label: '0 - 2 (Low)', color: '#22c55e' }
+                ];
+
+                bands.forEach(b => {
+                    html += `
+                    <div class="flex items-center">
+                        <span class="legend-color-box shadow-sm" style="background:${b.color}"></span>
+                        <span>${b.label}</span>
+                    </div>`;
+                });
+                html += `
+                    <div class="flex items-center mt-2 pt-2 border-t border-gray-100">
+                        <span class="legend-color-box shadow-sm" style="background:#f8fafc"></span>
+                        <span class="text-gray-400">No Data</span>
+                    </div>
+                </div>`;
+                container.innerHTML = html;
+                return;
+            }
+
+            // Crime Heatmap Legend Below
+            if (maxCrimes === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+            container.classList.remove('hidden');
+
+            const grades = [
+                0, 
+                Math.floor(maxCrimes * 0.2), 
+                Math.floor(maxCrimes * 0.4), 
+                Math.floor(maxCrimes * 0.6), 
+                Math.floor(maxCrimes * 0.8)
+            ];
+            
+            let html = '<h4 class="font-bold text-xs uppercase tracking-wider text-gray-500 mb-3 border-b pb-1">Crime Heatmap</h4><div class="space-y-1.5 text-xs text-gray-700">';
+            
+            for (let i = 0; i < grades.length; i++) {
+                const start = grades[i];
+                const end = grades[i + 1];
+                const colorValue = getCrimeColor(start + 1, maxCrimes);
+                
+                html += `
+                    <div class="flex items-center">
+                        <span class="legend-color-box shadow-sm" style="background:${colorValue}"></span>
+                        <span>${start.toLocaleString()} ${end ? '&ndash; ' + end.toLocaleString() : '+'}</span>
+                    </div>`;
+            }
+            
+            html += `
+                <div class="flex items-center mt-2 pt-2 border-t border-gray-100">
+                    <span class="legend-color-box shadow-sm" style="background:#f8fafc"></span>
+                    <span class="text-gray-400">No Data / 0</span>
+                </div>
+            </div>`;
+            
+            container.innerHTML = html;
+        }
+
+        // Start App
+        init();
+    </script>
+</body>
+</html>
